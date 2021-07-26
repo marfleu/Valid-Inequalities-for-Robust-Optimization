@@ -1,0 +1,13 @@
+\babel@toc {english}{}
+\contentsline {chapter}{\tocchapter {Chapter}{1}{Introduction}}{3}{}%
+\contentsline {chapter}{\tocchapter {Chapter}{2}{Robust Optimization: Basic formulations}}{5}{}%
+\contentsline {section}{\tocsection {}{1}{Basic Formulations}}{5}{}%
+\contentsline {section}{\tocsection {}{2}{Relaxation and Strong Inequalities}}{8}{}%
+\contentsline {section}{\tocsection {}{3}{Clique inequalities and the Conflict Graph}}{12}{}%
+\contentsline {chapter}{\tocchapter {Chapter}{3}{Clique Partitions in the Conflict Graph}}{21}{}%
+\contentsline {section}{\tocsection {}{1}{Application of Clique Partitions to Robust Formulations}}{21}{}%
+\contentsline {section}{\tocsection {}{2}{Finding Clique Partitions}}{23}{}%
+\contentsline {chapter}{\tocchapter {Chapter}{4}{Additional inequalities in the robust setting}}{25}{}%
+\contentsline {section}{\tocsection {}{1}{Additional inequalities in the robust relaxation of the Knapsack problem}}{25}{}%
+\contentsline {section}{\tocsection {}{2}{Analysis of the quality of Clique Inequalities}}{32}{}%
+\contentsline {chapter}{\tocchapter {Chapter}{}{Bibliography}}{33}{}%

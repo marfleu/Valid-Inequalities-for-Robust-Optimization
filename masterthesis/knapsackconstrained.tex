@@ -1,0 +1,125 @@
+\documentclass[titlepage, a4paper]{amsbook}
+\usepackage[T1]{fontenc}
+\usepackage[utf8, latin1]{inputenc}
+\usepackage[ngerman, english]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[T1]{fontenc}
+\usepackage{eurosym}
+\usepackage{selinput}
+\usepackage{graphicx}
+\usepackage[boxed]{algorithm2e}
+\usepackage{float}
+\usepackage{listings}
+\usepackage{longtable}
+\usepackage{array}
+
+\linespread{1.2}
+% http://www.gap-system.org/Manuals/doc/ref/chap4.html
+\lstdefinelanguage{GAP}{%
+  morekeywords={%
+    Assert,Info,IsBound,QUIT,%
+    TryNextMethod,Unbind,and,break,%
+    continue,do,elif,%
+    else,end,false,fi,for,%
+    function,if,in,local,%
+    mod,not,od,or,%
+    quit,rec,repeat,return,%
+    then,true,until,while%
+  },%
+  sensitive,%
+  morecomment=[l]\#,%
+  morestring=[b]",%
+  morestring=[b]',%
+}[keywords,comments,strings]
+
+\newcommand{\R}{\ensuremath{\mathbb{R}}}
+\newcommand{\N}{\ensuremath{\mathbb{N}}}
+\usepackage[variablett]{lmodern}
+\usepackage{xcolor}
+\lstset{
+  basicstyle=\ttfamily,
+  keywordstyle=\color{red},
+  stringstyle=\color{blue},
+  commentstyle=\color{green!70!black},
+  columns=fullflexible,
+}
+\newtheoremstyle{break}%
+{}{}%
+{}{}%
+{}{}%  % Note that final punctuation is omitted.
+{\newline}{}
+\theoremstyle{plain}
+ \newtheorem{thm}{Theorem}[chapter]
+ \newtheorem{prop}[thm]{Proposition}
+ \newtheorem{lem}[thm]{Lemma}
+ \newtheorem{cor}[thm]{Corollary}
+ \newtheorem{alg}[thm]{Algorithm}
+\theoremstyle{break}
+ \newtheorem{exm}[thm]{Example}
+\theoremstyle{definition}
+ \newtheorem{dfn}[thm]{Definition}
+\theoremstyle{remark}
+ \newtheorem{rem}[thm]{Remark}
+ \numberwithin{equation}{thm}
+ 
+\binoppenalty=9999
+\relpenalty=9999
+\DeclareMathOperator{\NP}{NP}
+\begin{document}
+Betrachten wir die Situation eines einfachen Knapsack Problems:
+\begin{align*}
+    \min\,c^Tx \\
+    \text{s.t. }a^Tx \leq b.
+\end{align*}
+Betrachte weiterhin hiervon die robuste Formulierung mit zusaetzlich gueltiger Ungleichung
+\[\sum_i \hat{c}_i d_i x_i \leq ez + \sum_i d_i p_i,\]
+wobei $d_i \geq 0$. \\ Was hilft uns diese zusaetzliche Ungleichung.
+\begin{lem}
+Es existiert eine optimale Loesung $(x^*,z^*,p^*)$ der relaxierten Variante des obigen robusten Problems mit der zus. Ungleichung, s.d. fuer \[N:=\{i \in \{1, \ldots, n\} \mid 0< x^*_i <1, \hat{c}_i > 0 , a_i >0 \}\] gilt, dass hoechstens ein Index $j \in N$ existiert mit 
+\[\hat{c}_j x^*_j < z^* \]
+(in diesem Fall ist $p^*_j=0$).
+\end{lem}
+\begin{proof}
+Sei $(x^*,z^*,p^*)$ die optimale Loesung s.d fuer
+\[M_{x^*}=N \cap \{i \in \{1, \ldots, n\} \mid \hat{c}_ix^*_i < z^*\}\]
+$\vert M_{x} \vert$ minimal. \\
+Falls $\vert M_{x^*} \vert \geq 2$ ex. $k,l \in M_x$, s.d. $\hat{c}_kx^*_l < z^*$ und $\hat{c}_kx^*_k < z^*$. OBdA gelte $\frac{c_k}{a_k} \leq \frac{c_l}{a_l}$ (es gilt eh Gleichheit).\\
+Waehle nun $y_l=x^*_l-\delta$ und $y_k=x^*_k+\frac{a_l}{a_k}\delta$
+fuer $\delta \in (0, \min(\frac{a_k}{a_l}(1-x^*_k), x^*_l)]$. \\
+Es gilt nun 
+\[a_l y_l + a_k y_k = a_l x^*_l + a_k x^*_k\]
+und 
+\[c_l y_l + c_k y_k = c_l x^*_l + c_k x^*_k + \delta (\frac{c_k}{a_k} - \frac{c_l}{a_l}) \leq c_l x^*_l + c_k x^*_k .\]
+Da Optimalitaet gilt muss Gleichheit gelten und es gilt $\frac{c_k}{a_k} = \frac{c_l}{a_l}$. 
+Ausserdem gilt 
+\[\hat{c}_ld_ly_l+\hat{c}_kd_ky_k = \hat{c}_ld_lx^*_l+\hat{c}_kd_kx^*_k + \delta (\hat{c}_k\frac{a_l}{a_k}d_k - \hat{c}_ld_l),\]
+OBdA koennen wir annehmen, dass $(\hat{c}_k\frac{a_l}{a_k}d_k - \hat{c}_ld_l) \leq 0$ gilt. (d.h. $\frac{\hat{c}_k}{\hat{c}_l}\leq \frac{d_la_k}{d_ka_l}$, die Alternative ist $\frac{\hat{c}_k}{\hat{c}_l}\geq\frac{d_la_k}{d_ka_l}$ oder auch $(\hat{c}_l\frac{a_k}{a_l}d_l - \hat{c}_kd_k) \leq 0$).Damit bleibt \[\sum_i \hat{c}_i d_i x_i \leq ez + \sum_i d_i p_i\] gueltig fuer die Verschiebung. \\
+Dann kann aber so viel $\delta$ verschoben werden, wie moeglich, d.h.
+$\delta = \min(\frac{a_k}{a_l}(1-x^*_k), x^*_l)$. Dann gilt aber $y_l=0$ oder $y_k=1$. Fuer $y_i=x^*_i$ sonst, ist dann aber $y$ eine optimale Loesung mit $\vert M_y \vert < \vert M_{x^*} \vert$, was ein Widerspruch ist. \\
+Also muss am Anfang bereits $M_{x^*}$ einelementig oder weniger gewesen sein.
+\end{proof}
+Also kann fuer eine optimale Loesung des relaxierten robusten Problems mit zusaetzlicher Ungleichung davon ausgegangen werden, dass hoechstens ein fraktionaler Eintrag $x^*_j$ (abgesehen von Eintraegen mit $\hat{c}_i=0=a_i$) der nicht Gleichheit erfuellt ( $\hat{c}_nx^*_n = z^* + p^*_n$ fuer alle $n \in N \setminus\{j\}$).
+Hiervon koennen wir ausgehend von der Ungleichung 
+\[\sum_i \hat{c}_i d_i x_i \leq ez + \sum_i d_i p_i\]
+eine Schranke an solche fraktionalen Eintraege geben, damit diese Ungleichung noch erfuellt ist.
+Betrachte hierfuer 
+\[Eq=\{i \in \{1, \ldots, n\} \mid \hat{c}_i x^*_i = z^* + p^*_i\}.\]
+Dann ist
+\[\sum_{i \in Eq}\hat{c}_i d_i x^*_i = \sum_{i \in Eq}z^* d_i + \sum_{i \in Eq}p^*_i d_i = \sum_{i \in Eq}z^* d_i + \sum_{i \in \{1, \ldots, n\}}p^*_i d_i\]
+da $p^*_k=0$, fuer $k \notin Eq$.
+Da
+\[\sum_{i \in Eq}z^* d_i + \sum_{i \in \{1, \ldots, n\}}p^*_i d_i= z^*(\sum_{i \in Eq\setminus N} d_i+ \sum_{i\in N\setminus\{j\}} d_i)+ \sum_{i \in \{1, \ldots, n\}}p^*_i d_i\]
+ist fuer
+\[z^*(\sum_{i \in Eq\setminus N} d_i+ \sum_{i \in N\setminus\{j\}} d_i)+ \sum_{i \in \{1, \ldots, n\}}p^*_i d_i > z^* e + \sum_{i \in \{1, \ldots, n\}}p^*_i d_i\]
+sprich fuer
+\[z^*(\sum_{i \in Eq\setminus N} d_i+ \sum_{i \in N\setminus\{j\}} d_i) > z^* e\]
+die zusaetzliche Ungleichung ungueltig.
+Falls wir nun OBdA annehmen, dass $d_1 \leq d_2 \leq \ldots \leq d_n$ gilt, und da insbesondere $\sum_{i \in N\setminus\{j\}} d_i > e$ fuer eine gueltige Loesung nicht erlaubt ist, so gilt also insbesondere fuer eine gueltige Loesung $(x^*,z^*,p^*)$ des robusten relaxierten Problems \textbf{mit} zusaetzlicher Ungleichung, dass fuer 
+\[m = \min\{k \mid \sum_{i=1}^k d_i > e\}\]
+gilt $m+1 > \vert N \vert$.\\
+Also wird die Anzahl der fraktionalen Koeffizienten der Relaxierung \textbf{mit} der zusaetzlichen Ungleichung beschraenkt durch Eigenschaften der Ungleichung. \\
+Insbesondere ist dies nuetzlich bei verallgemeinerten Cliquen-Ungleichungen
+\[\sum_{i=m}^n x_i \leq k\]
+fuer $k\geq 1$. In einem Knapsack Problem mit dieser gueltigen Ungleichung koennen in der Variablenmenge $\{x_m, \ldots, x_n\}$ (falls jewweils $a_i,\hat{c}_i > 0$ gilt) hoechstens $k$ Variablen fraktional sein.
+\end{document}

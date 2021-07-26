@@ -1,0 +1,1050 @@
+\documentclass[titlepage, a4paper]{amsbook}
+\usepackage[T1]{fontenc}
+\usepackage[utf8, latin1]{inputenc}
+\usepackage[ngerman, english]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[T1]{fontenc}
+\usepackage{eurosym}
+\usepackage{selinput}
+\usepackage{graphicx}
+\usepackage[boxed]{algorithm2e}
+\usepackage{float}
+\usepackage{listings}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usetikzlibrary{decorations.pathmorphing}
+\usetikzlibrary{backgrounds}
+\usepackage{caption}
+\usepackage{subcaption}
+\captionsetup{compatibility=false}
+
+\linespread{1.2}
+% http://www.gap-system.org/Manuals/doc/ref/chap4.html
+\lstdefinelanguage{GAP}{%
+  morekeywords={%
+    Assert,Info,IsBound,QUIT,%
+    TryNextMethod,Unbind,and,break,%
+    continue,do,elif,%
+    else,end,false,fi,for,%
+    function,if,in,local,%
+    mod,not,od,or,%
+    quit,rec,repeat,return,%
+    then,true,until,while%
+  },%
+  sensitive,%
+  morecomment=[l]\#,%
+  morestring=[b]",%
+  morestring=[b]',%
+}[keywords,comments,strings]
+
+\newcommand{\R}{\ensuremath{\mathbb{R}}}
+\newcommand{\N}{\ensuremath{\mathbb{N}}}
+\usepackage[variablett]{lmodern}
+\usepackage{xcolor}
+\lstset{
+  basicstyle=\ttfamily,
+  keywordstyle=\color{red},
+  stringstyle=\color{blue},
+  commentstyle=\color{green!70!black},
+  columns=fullflexible,
+}
+\newtheoremstyle{break}%
+{}{}%
+{}{}%
+{}{}%  % Note that final punctuation is omitted.
+{\newline}{}
+\theoremstyle{plain}
+ \newtheorem{thm}{Theorem}[chapter]
+ \newtheorem{prop}[thm]{Proposition}
+ \newtheorem{lem}[thm]{Lemma}
+ \newtheorem{cor}[thm]{Corollary}
+ \newtheorem{alg}[thm]{Algorithm}
+\theoremstyle{break}
+ \newtheorem{exm}[thm]{Example}
+\theoremstyle{definition}
+ \newtheorem{dfn}[thm]{Definition}
+\theoremstyle{remark}
+ \newtheorem{rem}[thm]{Remark}
+ \numberwithin{equation}{thm}
+ 
+\binoppenalty=9999
+\relpenalty=9999
+\DeclareMathOperator{\NP}{NP}
+\DeclareMathOperator{\PP}{P}
+\begin{document}
+
+\newcommand{\fix}[1]{\text{Fix}_{#1}}
+\newcommand{\s}[1]{\mathcal{SP}_{#1}}
+\newcommand{\set}[1]{\lbrace 1, \ldots , #1 \rbrace}
+\newcommand{\U}{\Sigma}
+\newcommand{\Hd}{\Delta}
+
+\begin{titlepage}
+\begin{center}
+
+\textbf{\LARGE Recycling valid inequalities for combinatorial optimization under budgeted uncertainty} \\
+\textbf{\LARGE Wiederverwertung gultiger Ungleichungen fur die Kombinatorische Optimierung unter Unsicherheiten mit Budget}
+%bei langen Titeln, die mehrere Zeilen benoetigen:
+%\textbf{\LARGE Langer Titel der  ueber \medskip mehrere Zeilen laeuft}
+
+\bigskip\bigskip
+\textbf{Masterarbeit}
+
+
+\bigskip\bigskip\bigskip
+Vorgelegt von
+
+\bigskip
+\textbf{Marius Fleuster}
+
+\bigskip
+aus Aachen
+
+
+\vfill
+Angefertigt am\\
+Lehrstuhl II f{\"u}r Mathematik\\ 
+der Fakult\"at f{\"u}r Mathematik, Informatik und Naturwissenschaften\\ 
+der Rheinisch-Westf\"alischen Technischen Hochschule Aachen
+
+\bigskip
+%Abgabedatum:
+\text{29. Oktober, 2021}
+
+\bigskip
+ \begin{tabular}[t]{ll@{}l}
+    
+Erstgutachter:& Zweitgutachter: : \\
+Prof. Dr. Arie M.C.A. Koster  & Prof. Dr.   \\
+Lehrstuhl II f\"ur Mathematik  & Lehrstuhl II f\"ur Mathematik  \\
+RWTH Aachen  & RWTH Aachen  \\
+\end{tabular}
+
+%Wird der Schwerpunkt der Abschlussarbeit im Anwendungsfach gewaehlt:
+%Betreuer: Prof.\ Dr.\ Vorname Nachname\\
+%Zweitbetreuer: Prof.\ Dr.\ Vorname Nachname
+
+\end{center}
+\end{titlepage}
+
+
+\tableofcontents
+
+
+
+
+\chapter{Introduction}
+
+\chapter{Robust Optimization: Basic formulations}
+\section{Basic Formulations}
+Consider a classical Integer Linear Programming formulation of a problem with binary variables (for example a Knapsack instance).
+\begin{align*}
+    \text{min } &c^T x \\
+    \text{s.t. } &Ax \leq b, \\
+    &x \in \{0,1\}^n,
+\end{align*}
+where $A \in \R^{n \times m}$ for $n,m \in \N$, where $c \in \R^n$ and where for two vectors $y,z \in \R^m$ the relation $y \leq z$ holds if and only if $y_i \leq z_i$ for all $0 \leq i \leq m$.\\
+The above formulation reflects a situation where the modeler faces costs $c$ and matrix coefficients (for example weights in a Knapsack instance) that he is certain of. In some situations though one cannot be exactly sure about the exact values of the cost vector or the matrix coefficients for that matter. It may happen that one only knows intervals of uncertainty $I_{i,j}$ for $i=0,\ldots,m$ and $j=1,\ldots,n$, where $c_j \in I_{0,j}$
+and $A_{i,j} \in I_{i,j}$ for $i=1, \ldots, m$ and $j=1, \ldots, n$. This thesis considers exclusively the special case $I_{0,j}=[c_i, c_i + \hat{c}_i]$ for $j=1, \ldots, n$ and $I_{i,j}=[A_{i,j},A_{i,j}]$ for the uncertainty intervals of the matrix coefficients. Thus only the costs are uncertain. \\
+Since in practice a deviation of all coefficients to their worst case may be considered unrealistic Bertsimas and Stim propose to consider a scenario, where for a fixed number $\Gamma \in [0,n]$ only $\lfloor \Gamma \rfloor$ cost values deviate from their minimal value $c_j$ to their maximal value $c_j + \hat{c}_j$ and an additional value differs by $(\Gamma - \lfloor \Gamma \rfloor)\hat{c}_j$. One then considers the following minimization problem:
+\begin{dfn}\label{Robust Definition}
+For $\Gamma \in [0,n]$ and $\hat{c}_j \geq 0$ for $j=1,\ldots, n$ the minimization problem
+\begin{equation}\label{robustoriginal}
+\begin{split}
+    z_{rob}=\text{min } \sum_{j=1}^{n} c_j x_j + &\max_{S \cup \{t\} \subseteq \{1,\ldots,n\}, \vert S \vert \leq \lfloor \Gamma \rfloor}(\Gamma - \lfloor \Gamma \rfloor)\hat{c}_t x_t + \sum_{s \in S} \hat{c}_s x_s\\
+    \text{s.t. } &Ax \leq b, \\
+    &x \in \{0,1\}^n.
+\end{split}
+\end{equation}
+is called a \emph{robust formulation} of the IP
+\begin{equation}\label{IP}
+\begin{split}
+    \text{min } &c^T x \\
+    \text{s.t. } &Ax \leq b, \\
+    &x \in \{0,1\}^n.
+\end{split}
+\end{equation}
+We denote the set $\{x \in \{0,1\}^n \mid Ax \leq b\}$ by $P$.
+\end{dfn}
+The above formulation considers for every $y \in P$ the worst case deviation of $\lfloor \Gamma \rfloor$ cost values to their maximum interval bound, and one partial deviation with regards to minimizing the costs. The cost function is therefore not linear anymore. Yet the following Lemma suggest a way to find the solution to the robust formulation by solving a mixed integer problem via dualization. The proof follows (Bertsimas/Stim).
+\begin{lem}
+Let 
+\[\beta(y):=\max_{S \cup \{t\} \subseteq \{1,\ldots,n\}, \vert S \vert \leq \lfloor \Gamma \rfloor}(\Gamma - \lfloor \Gamma \rfloor)\hat{c}_t y_t + \sum_{s \in S} \hat{c}_s y_s\] 
+for $y \in P$. Then 
+\begin{equation}\label{eq. 1}
+\begin{split}
+  \beta(y)= \max\,&\sum_{j=1}^{n}\hat{c}_j y_j z_j \\
+  \text{s.t. } &\sum_{j=1}^{n}z_j \leq \Gamma \\
+  &z_i \in [0,1], \, i=1, \ldots, n
+  \end{split}
+\end{equation}
+holds and by dualization one gets
+\begin{equation}\label{eq. 2}
+\begin{split}
+  \beta(y)= \min\,&\sum_{j=1}^{n}p_j + \Gamma \cdot z \\
+  \text{s.t. } &p_j+ z \geq \hat{c}_jy_j, \, j=1, \ldots,n\\
+  &p_j \geq 0, \, j=1, \ldots, n \\
+  &z \geq 0.
+  \end{split}
+\end{equation}
+\end{lem}
+\begin{proof}
+Let $S \cup \{t\} \subseteq \{1,\ldots,n\}$ be such that $\vert S \vert \leq \lfloor \Gamma \rfloor$ and such that
+\[\beta(y)=\hat{c}_t y_t + \sum_{s \in S} \hat{c}_s y_s.\]
+Define $z_s:=1$ for all $s \in S$ and $z_t:=(\Gamma - \lfloor \Gamma \rfloor)$ and $z_u:=0$ for all $u \in U:=\{1,\ldots,n\} \setminus S\cup\{t\}$. By definition of $S$ this is a fesible solution of \eqref{eq. 1}. Assume this was not optimal. In order to increase another variable $z_u$ for $u \in U$ either a $z_s$ for $s \in S$ or $z_t$ has to be decreased. Since the objective value of \ref{eq. 1} increases, $\hat{c}_u y_u$ must be greater than $\hat{c}_a y_a$ for at least one $a \in S $ or greater than $\hat{c}_t y_t$. In the former case \[\sum_{s \in S \setminus a}\hat{c}_sy_s + \hat{c}_u y_u > \sum_{s \in S }\hat{c}_sy_s\] 
+holds and in the latter case
+\[(\Gamma - \lfloor \Gamma \rfloor)\hat{c}_u y_u > (\Gamma - \lfloor \Gamma \rfloor)\hat{c}_t y_t.\]
+Either way $S \cup \{t\}$ is not an optimal selection and therefore
+\[\beta(y)>\hat{c}_t y_t + \sum_{s \in S} \hat{c}_s y_s.\]
+We have thus shown the equality of $\beta(y)$ and the solution of \ref{eq. 1}. \\
+The second equality is a straight forward application of dualization for the matrix $A$ with $A_{1,j}=1$ for $j=1, \ldots,n$ and $A_{i,j}=\delta_{i+1,j}$ for $i=2,\ldots,n+1$ and $j=1,\ldots,n$ and right hand side $b$ with $b_1=\Gamma$ and $b_i=1$ for $i=2, \ldots, n+1$.
+\end{proof}
+With this Lemma and in particular with the formulation \eqref{eq. 2}, the following Theorem can be stated as the basis for an easier treatment of the robust formulation.
+\begin{thm}
+The solution of the robust formulation of the IP \eqref{IP} is equal to the solution of the mixed integer program
+\begin{equation}\label{robust}
+\begin{split}
+    z_{rob}=\min\, &\sum_{j=1}^{n} c_j x_j + \sum_{j=1}^{n}p_j + \Gamma \cdot z\\
+    \text{s.t. } &Ax \leq b, \\
+    &p_j+ z \geq \hat{c}_jx_j, \, j=1, \ldots,n\\
+  &p_j \geq 0, \, j=1, \ldots, n \\
+  &z \geq 0, \\
+    &x \in \{0,1\}^n.
+\end{split}
+\end{equation}
+\end{thm}
+\begin{proof}
+The robust formulation \eqref{robustoriginal} can be written as 
+\begin{equation*}
+\begin{split}
+    \text{min } &\sum_{j=1}^{n} c_j x_j + \beta(x)\\
+    \text{s.t. } &Ax \leq b, \\
+    &x \in \{0,1\}^n.
+\end{split}
+\end{equation*}
+Substituting $\beta(x)$ by the expression \eqref{eq. 2} yields the desired result.
+\end{proof}
+The mixed integer formulation \eqref{robust} makes the robust optimization problem accessible for the usage of common software for linear programming. Unfortunately the number of variables has more than doubled in comparison to the original non robust formulation. Also the problem has naturally become more complex as the variables $x_j$ have to be balanced against the values of $z$ and the $p_j$. If the coeffient $\hat{c}_j$ is too large, setting $x_j=1$ may be unfeasible, even if it was part of a minimal solution to \eqref{IP}. In that case either $p_j$ or $z$ need to become larger, which increases the objective value. Increasing $z$ is very pricey but allows all $p_j$ at once to be lower.\\
+Robust Optimization can make easy problems hard. Consider the following example:
+\begin{exm}
+Consider the problem of finding a Vertex Cover in a graph $G=(V,E)$ with vertex set $V$ and edge set $E\subseteq \binom{V}{2}$. That is a subset $C \subseteq V$ with $C \cap e \neq \emptyset$ for all $e \in E$. This is a trivial task, since $V$ is already a Vertex Cover. A corresponding IP formulation would be:
+\begin{equation*}
+    \begin{split}
+        \min \,& 0 \\
+        \text{s.t. }& x_i + x_j \geq 1 \text{ for }\{i,j\} \in E \\
+        &x \in \{0,1\}^{\vert V \vert}.
+    \end{split}
+\end{equation*}
+Now let $\Gamma=k \leq \vert V \vert$ be an integer number and $\hat{c}_i=1$ for all $i=1, \ldots, \vert V \vert$ (while $c_i=0$). In the original robust formulation this translates to
+\begin{equation*}
+    \begin{split}
+        \min \,& \max_{S \subseteq V, \vert S \vert =k} \sum_{s \in S} \hat{c}_s x_s \\
+        \text{s.t. }& x_i + x_j \geq 1 \text{ for all }\{i,j\} \in E \\
+        &x \in \{0,1\}^{\vert V \vert}.
+    \end{split}
+\end{equation*}
+If a solution to the above robust formulation yields a value smaller than $k$, then the Graph has a Vertex Cover smaller than $k$. This problem is known to be $\NP$-hard. 
+\end{exm}
+Nevertheless it can be shown, that if for the initial discrete polyhedron $P$ and for every cost function $c^Tx$ the corresponding IP can be solved in polynomial time, then the robust formulation can be solved in polynomial time as well.
+\begin{thm}[Bertsimas Sim: Robust discrete optimization and network flows]
+Let $P$ be the set of feasible vectors from Definition~\ref{Robust Definition} and let $z_{rob}$ be the solution of the robust formulation \eqref{robustoriginal}.
+We assume that $\hat{c}_1 \geq \hat{c}_2 \geq \ldots \geq \hat{c}_n$ and we set $\hat{c}_{n+1}=0$. Then 
+\[z_{rob}= \min_{l=1, \ldots, n+1} G^l,\]
+where 
+\begin{equation}
+    \begin{split}
+        G^l=\min\, &\Gamma \hat{c}_l + c^Tx + \sum_{j=1}^{l} (\hat{c}_j -\hat{c}_l)x_j \\
+        &x \in P
+    \end{split}
+\end{equation}
+for all $l=1, \ldots, n+1$.
+\end{thm}
+\begin{rem}
+So to find the solution to the robust formulation it suffices to solve $n+1$ problems over the discrete polyhedron $P$ of the original problem. If this can be done in polynomial time, the robust formulation can be solved in polynomial time as well.
+\end{rem}
+Even though one may just solve $n+1$ instances of the original problem to solve the robust variant, this may pose a risk in case the undelying problem is not known to be solvable in polynomial time or is $\NP$-hard.
+This thesis will try to give possible improvements for the solution of \eqref{robustoriginal}, if the aim is to solve the MLP directly using techniques like relaxation.
+\section{Relaxation and Strong Inequalities}
+Relaxation is an essential tool in modern MLP solvers. Relaxed variants of Mixed Integer Programs are often way easier to solve.
+\begin{dfn}
+The \emph{relaxation} of the robust formulation \eqref{robustoriginal} is the linear program
+\begin{equation}\label{robust relaxation}
+\begin{split}
+    z_{rel}=\min\, &\sum_{j=1}^{n} c_j x_j + \sum_{j=1}^{n}p_j + \Gamma \cdot z\\
+    \text{s.t. } &Ax \leq b, \\
+    &p_j+ z \geq \hat{c}_jx_j, \, j=1, \ldots,n\\
+  &p_j \geq 0, \, j=1, \ldots, n \\
+  &z \geq 0, \\
+    &x \in [0,1]^n.
+\end{split}
+\end{equation}
+So the binary solution vector can obtain non discrete values between $0$ and $1$. 
+\end{dfn}
+A classical result from linear programming guarantees a polynomial time algorithm for \eqref{robust relaxation}.
+\begin{thm}
+The robust relaxation \eqref{robust relaxation} can be solved in polynomial time and 
+\[z_{rel} \leq z_{rob}\]
+holds.
+(maybe give the state of the art running times...)
+\end{thm}
+A feasible and integer solution to \eqref{robust relaxation} yields a feasible solution for \eqref{robust}.
+But the results can also be arbitrarily bad.
+\begin{exm}\label{exm: choose best item}
+Consider the problem of choosing the cheapest of several ($n$) items with the same cost ($c_i=1$) and with maximal deviation of one item ($\Gamma=1$) with cost deviation value of $1$ ($\hat{c}_i=1$). The relaxation of the robust formulation of this problem is
+\begin{equation*}
+    \begin{split}
+        \min \, &\sum_{i=1}^{n}x_i + \sum_{j=1}^{n}p_j + z\\
+        \text{s.t. } &\sum_{i=1}^{n}x_i = 1, \\
+        &p_j+ z \geq x_j, \, j=1, \ldots,n\\
+     &p_j \geq 0, \, j=1, \ldots, n \\
+    &z \geq 0, \\
+    &x \in [0,1]^n.
+    \end{split}
+\end{equation*}
+While an obvious solution to the original robust problem would be to choose any item, setting all $p_i=0$ and $z=1$ with an objective value of $2$, the solution to the relaxation can be drastically improved. 
+One feasible solution, which happens to be optimal as well, is $x_i=\frac{1}{n}$ for $i=1, \ldots,n$, $p_i=0$ for $i=1, \ldots,n$ and $z=\frac{1}{n}$. This solution has an objective value of $1+\frac{1}{n}=\frac{n+1}{n}$. This is not a good behaviour of the relaxed problem and a general problem.
+\end{exm}
+\begin{exm}
+Consider a general knapsack instance (the cost coefficients must be negative and $\hat{c}_i$ is still positive)  and its robust relaxation
+\begin{equation*}
+\begin{split}
+    \min\, &\sum_{j=1}^{n} c_j x_j + \sum_{j=1}^{n}p_j + \Gamma \cdot z\\
+    \text{s.t. } &\sum_{j=1}^{n}a_j x_j \leq b, \\
+    &p_j+ z \geq \hat{c}_jx_j, \, j=1, \ldots,n\\
+  &p_j \geq 0, \, j=1, \ldots, n \\
+  &z \geq 0, \\
+    &x \in [0,1]^n.
+\end{split}
+\end{equation*}
+Let $(x^*, p^*, z^*)$ be an optimal solution to the robust problem and assume that the number of non-zero entries of $x^*$ ($N:=\{x^*_i \mid x^*_i =1\}$) is significantly lower than the number of zero entries of $x^*$. Assume furthermore $\sum_{j=1}^{n}a_j x^*_j < b$.
+Let $x^*_i=1$ such that there exist an entry $x^*_k=0$ with $c_k < c_i$. This implies $\sum_{j \in N\setminus\{i\}}a_j x^*_j + a_k > b$, because otherwise $x^*$ would not be optimal. \\
+If we assume additionally that $\hat{c}_i$ is maximal for all $\hat{c}_m$ for $m \in N$. Then a shift of weight from $x_i$ to $x_k$ of $\epsilon$ allows for an adjustement of $z^*$ by $\epsilon$, as long as 
+\begin{align*}
+    &\epsilon (a_k - a_i) \leq b - \sum_{j \in N}x^*_j, \\
+    &\epsilon \hat{c}_k \leq \hat{c}_i (1-\epsilon), \\
+   \text{and } &\hat{c}_i (1-\epsilon) \geq \hat{c}_m, m \in N
+\end{align*}
+hold, meanwhile the costs of the items do not decrease. So the objective value decreases and the relaxed version of the robust problem does probably not obtain an integer (partial) solution $x$.
+\end{exm}
+The above examples show that in order to solve the relaxed robust problem it is often better to spread little weight on many entries of the $x$-vector of a given feasible solution $(x,p,z)$ of \eqref{robust relaxation} instead of concentrating a maximum weight of $1$ on fewer entries. That is because $z$ can often be kept lower this way. This behaviour is not desirable, as many techniques of modern MIP solvers rely on relaxation and techniques as the feasibility pump for example. For those techniques to work well, a solution of the relaxation with many integer values is preferred. To tackle this problem a derivation of additional inequalities for the MIP \eqref{robust}, which often make deviations from integer solutions unfeasible in the relaxed robust optimization problem.\\
+The following general insight will be of great help.
+\begin{lem}\label{nonlinear inequalities}
+The inequalities $p_j + z \geq \hat{c}_jx_j$ from the robust formulation \eqref{robust} are equivalent to the non-linear inequalities
+\[p_j + z \cdot x_j \geq \hat{c}_j \cdot x_j\]
+for $j=1, \ldots, n$. That is \eqref{robust} and 
+\begin{equation}\label{nonlin robust}
+\begin{split}
+    \min\, &\sum_{j=1}^{n} c_j x_j + \sum_{j=1}^{n}p_j + \Gamma \cdot z\\
+    \text{s.t. } &Ax \leq b, \\
+    &p_j+ z \cdot x_j \geq \hat{c}_jx_j, \, j=1, \ldots,n\\
+  &p_j \geq 0, \, j=1, \ldots, n \\
+  &z \geq 0, \\
+    &x \in \{0,1\}^n
+\end{split}
+\end{equation}
+yield the exact same solutions.
+\end{lem}
+\begin{proof}
+Consider a feasible solution $(x,p,z)$ of \eqref{robust}. Then either $x_j=0$ and the inequality $p_j=p_j + z \cdot x_j \geq \hat{c}_j x_j$ is trivially true, since $p_j \geq 0$ was true in the first place, or $x_j=1$, in which case $\hat{c}_j x_j \leq p_j + z = p_j + z \cdot x_j$ is true as well. \\
+On the other hand for a solution $(x,p,z)$ of \eqref{nonlin robust} again $x_j=0$ implies $p_j +z \geq \hat{c}_j x_j=0$ trivially since $p_j,z \geq 0$. But if $x_j=1$ then $p_j + z=p_j + z \cdot x_j \geq \hat{c}_j x_j$.
+\end{proof}
+Lemma~\ref{nonlinear inequalities} can be used to derive new feasible inequalities including the variables $p_j$ for $j=1, \ldots, n$ and $z$ from \eqref{robust} from certain feasible inequalities for the original problem \ref{IP}.
+\begin{thm}\label{thm: use inequalities for robust}
+Let the inequality 
+\[\sum_{i=1}^{n}d_i x_i \leq e\]
+with $d_i \geq 0$ for all $i=1, \ldots,n$ be a feasible inequality for \eqref{IP}. That means the inequality is valid for all vectors in the polyhedron of \eqref{IP}.
+Then the inequality
+\[\sum_{i=1}^{n}d_i p_i + e \cdot z \geq \sum_{i=1}^{n}d_i \hat{c}_i x_i\]
+is feasible for \eqref{robust}.
+\end{thm}
+\begin{proof}
+Since the inequalities $p_j + z \cdot x_j \geq \hat{c}_j x_j$ are feasible for \eqref{robust} by Lemma~\ref{nonlinear inequalities}, and since $d_j \geq 0$, 
+\[d_j p_j +  z \cdot d_j x_j \geq d_j \hat{c}_j x_j\]
+is feasible.
+Summing those inequalities up over all $j=1, \ldots, n$
+yields the feasible inequality
+\[\sum_{i=1}^{n}(d_i p_i +  z \cdot d_i x_i) \geq \sum_{i=1}^{n}d_i \hat{c}_i x_i.\]
+The left hand side can be written as 
+\[\sum_{i=1}^{n}d_i p_i + z \cdot \sum_{i=1}^{n}d_i x_i.\]
+Because 
+\[\sum_{i=1}^{n}d_i x_i \leq e\]
+is feasible, this yields
+\[\sum_{i=1}^{n}d_i p_i + z \cdot \sum_{i=1}^{n}d_i x_i \leq \sum_{i=1}^{n}d_i p_i +e \cdot z\]
+and thus proves the claim.
+\end{proof}
+With this one can return to Example~\ref{exm: choose best item}.
+\begin{exm}\label{exm: demonstrate power of cliques}
+In the situation of Example~\ref{exm: choose best item} the equality (it is also an inequality) 
+\[\sum_{i=1}^{n}x_i =1\]
+is feasible for the original IP and the coefficients are positive.
+Thus \[\sum_{i=1}^{n}p_i + 1 \cdot z \geq \sum_{i=1}^{n}x_i\]
+is a feasible inequality for the robust formulation. If one add this inequality to the robust formulation and considers the relaxation
+\begin{equation*}
+    \begin{split}
+        \min \, &\sum_{i=1}^{n}x_i + \sum_{j=1}^{n}p_j + z\\
+        \text{s.t. } &\sum_{i=1}^{n}x_i = 1, \\
+        &p_j+ z \geq x_j, \, j=1, \ldots,n\\
+        & \sum_{i=1}^{n}p_i + z \geq \sum_{i=1}^{n}x_i \\
+     &p_j \geq 0, \, j=1, \ldots, n \\
+    &z \geq 0, \\
+    &x \in [0,1]^n,
+    \end{split}
+\end{equation*}
+the solution of $x_i=\frac{1}{n}$, $p_i = 0$ and $z=\frac{1}{n}$ is not a valid one anymore. Instead $z$ has to have a value of $1$ or $\sum_{i=1}^{n}p_i = 1$ because $\sum_{i=1}^{n}x_i = 1$ in every case and the newly added inequality implies
+\[\sum_{i=1}^{n}p_i + z \geq 1.\]
+It can be deduced that the optimal objective value is now $2$ which can be achieved by setting $x_1=1$ and $z=1$ and every other variable to $0$. This problem may still have non integer solutions though, with $x_i=\frac{1}{n}$, $p_i=\frac{1}{n}$ and $z=0$ for $i=1, \ldots, n$.
+\end{exm}
+\section{Clique inequalities and the Conflict Graph}
+This section will introduce so called Clique inequalities, which can be very useful inequalites in the robust setting. A variant of these inequalities has already appeared in Example~\ref{exm: demonstrate power of cliques}.
+\begin{dfn}
+For variables $x_1, \ldots, x_n$ and a subset $Q \subseteq \{1, \ldots, n\}$ the inequality
+\[\sum_{i \in Q}x_i \leq 1\]
+is called \emph{Clique Inequality} of the Clique $Q$.
+\end{dfn}
+Clique Inequalities form cliques in the so called Conflict Graph. Conflict Graphs were introduced into the world of MIP solvers by Achterberg (Conflict Analysis in Mixed Integer Programming).
+\begin{dfn}\label{dfn: conflict graph}
+Let 
+\begin{align*}
+    \min\,&c^T x \\
+    \text{s.t. } &Ax \leq b, \\
+    &x \in \{0,1\}^n,
+\end{align*}
+be an integer program. The Graph $G_C=(V_C, E_C)$ with 
+vertex set 
+\[V_C = \{x_i \mid i=1, \ldots, n\} \cup \{\bar{x}_i \mid i=1, \ldots, n\}\]
+and edges
+\begin{align*}
+E_C=\{&[x_i, x_j] \mid \text{there is no feasible solution }x \in \{0,1\}^n \\& \text{ to the integer program with }x_i=x_j=1 \} \\
+\cup \{&[x_i, \bar{x}_j] \mid \text{there is no feasible solution }x \in \{0,1\}^n \\& \text{ to the integer program with }x_i=1=1-x_j \} \\
+\cup \{&[\bar{x}_i, \bar{x}_j] \mid \text{there is no feasible solution }x \in \{0,1\}^n \\&\text{ to the integer program with }x_i-1=1=1-x_j \}
+\end{align*}
+is called the \emph{Conflict Graph} to the integer program.
+So the Conflict Graph has all the variables and their complementary variables as vertices and two vertices are connected if it is impossible for both variables (or complementary variables respectively) to be true at the same time in any solution of the integer program.
+\end{dfn}
+Often inequalities of the form
+\[\sum_{i \in I}d_i x_i + \sum_{j \in J}d_j\bar{x}_j \leq e\]
+will be written instead of
+\[\sum_{i \in I}d_i x_i + \sum_{j \in J}d_j(1-x_j) \leq e.\]
+The following easy Lemma summarizes the connection between Clique Inequalities and cliques in a Conflict Graph.
+\begin{lem}
+Let \begin{align*}
+    \min\,&c^T x \\
+    \text{s.t. } &Ax \leq b, \\
+    &x \in \{0,1\}^n,
+\end{align*}
+be an integer program. Then the inequality
+\[\sum_{i \in I} x_i + \sum_{j \in J}\bar{x}_j \leq 1\]
+for $I \cup J \subseteq \{1, \ldots, n\}$ and $I \cap J = \emptyset$ is feasible for the integer program if and only if
+\[Q = \bigcup_{i \in I}\{x_i\} \cup \bigcup_{j \in J}\{\bar{x}_j\}\]
+forms a clique in the conflict graph $G_C$.
+\end{lem}
+Clique Inequalities and the Conflict Graph to an integer problem will be very important pieces in possible improvements of the relaxation \eqref{robust relaxation}. As was already demonstrated in Example~\ref{exm: demonstrate power of cliques} Clique inequalities and the use of Theorem~\ref{thm: use inequalities for robust} may close the gap between the optimal objective value of \eqref{robust} and that of \eqref{robust relaxation}. Clique Inequalities have an additional advantage. They often allow a reduction of the number of variables.
+\begin{thm}\label{thm: variable reduction with cliques}
+Let a robust formulation of an integer program \eqref{IP} of the form \eqref{robust} be given. Let furthermore
+\[\sum_{i \in Q}x_i \leq 1\]
+be a feasible Clique Inequality for $Q \subseteq \{1, \ldots, n\}$ to the original IP \eqref{IP}. Let $Q^c:=\{1, \ldots, n\} \setminus Q$.
+Then the MIP
+\begin{equation}\label{reduced robust}
+\begin{split}
+    \min\, &\sum_{j=1}^{n} c_j x_j + \sum_{j \in Q^c}^{n}p_j+p_Q + \Gamma \cdot z\\
+    \text{s.t. } &Ax \leq b, \\
+    &p_j+ z \geq \hat{c}_jx_j, \, j \in Q^c\\
+    &p_Q+ z \geq \sum_{i \in Q} \hat{c}_ix_i \\
+  &p_j \geq 0, \, j \in Q^c\\
+  &p_Q \geq 0 \\
+  &z \geq 0, \\
+    &x \in \{0,1\}^n
+\end{split}
+\end{equation}
+has the same optimal objective value as \eqref{robust}.
+Denote by $p_{\_S}$ the vector with entries of $p$ of the index set $S \subseteq \{1, \ldots, n\}$. The map 
+\[f:(x, z, p_{\_Q}, p_{\_Q^c})^T \mapsto (x, z, p_Q=\sum_{i \in Q}p_i, p_{\_Q^c})^T \]
+is a surjection of optimal solutions of \eqref{robust} to optimal solutions of \eqref{reduced robust}.
+\end{thm}
+\begin{proof}
+It suffices to show that the map f is a surjection between optimal solutions, because the objective values are identical for preimage and image of the map.
+So let $(x^*, z^*, p^*_{\_Q}, p^*_{\_Q^c})^T$ be an optimal solution to \eqref{robust}. Because of Lemma~\ref{thm: use inequalities for robust} and since the Clique Inequality is feasible for the original IP and therefore also for \eqref{robust}, the inequality
+\[\sum_{i \in Q}p_i + z \geq \sum_{i \in Q}\hat{c}_ix_i\]
+is feasible for \eqref{robust}.
+So the inequality
+\[p_Q + z \geq \sum_{i \in Q}\hat{c}_ix_i\]
+is valid for $f\left((x^*, z^*, p^*_{\_Q}, p^*_{\_Q^c})^T\right)$. So \[f\left((x^*, z^*, p^*_{\_Q}, p^*_{\_Q^c})^T\right)=(x^*, z^*, p^*_{Q}, p^*_{\_Q^c})^T\]
+is a feasible solution to \eqref{reduced robust}.
+Now the Clique Inequality implies that $x^*_i=1$ for at most one index $i \in Q$. But as $p^*_i$ is minimal 
+\[p^*_j=\max\{0, \hat{c}_jx^*_j\}\]
+must hold for all $j \in Q$. Therefore $p_j=0$ for all but at most one $j \in Q$. Thus $\sum_{j \in Q}p^*_j=p^*_i$ holds for one $i \in Q$.
+As the Clique Inequality also holds for \eqref{reduced robust} one can deduce that an optimal solution $(\tilde{x},\tilde{z},\tilde{p}_Q, \tilde{p}_{\_Q^c})$ must satisfy
+\[p_Q+z \geq \hat{c}_jx_j\]
+for all $j \in Q$ as $\tilde{x}_i=1$ holds for at most one index $i \in Q$. Now there is a preimage \[(\tilde{x},\tilde{z},\tilde{p}_{\_Q}, \tilde{p}_{\_Q^c}) \in f^{-1}((\tilde{x},\tilde{z},\tilde{p}_Q, \tilde{p}_{\_Q^c}))\] that
+satisfies $p_i = p_{\_Q}$ ($p_j=0$ for all $j \in Q\setminus\{i\}$) and thus satisfies the inequalities
+\[p_j + z \geq \hat{c}_jx_j\]
+because $\tilde{x}_j=0$ and satisfies 
+\[p_i + z \geq \hat{c}_ix_i\]
+because $p_i=p_Q$ holds. Thus there is one preimage of any optimal solution, which is a feasible solution to \eqref{robust}. This solution has the same objective value as its image.
+Therefore the objective value of $(\tilde{x},\tilde{z},\tilde{p}_{\_Q}, \tilde{p}_{\_Q^c})^T$ is greater or equal than the value of $(x^*, z^*, p^*_{\_Q}, p^*_{\_Q^c})^T$, which has the same value as $(x^*, z^*, p^*_{Q}, p^*_{\_Q^c})^T$, which has an objective value greater or equal to $(\tilde{x},\tilde{z},\tilde{p}_{\_Q}, \tilde{p}_{\_Q^c})^T$. Thus all values are the same and $(x^*, z^*, p^*_{Q}, p^*_{\_Q^c})^T$ is an optimal solution. \\
+So it was shown that every optimal solution of \eqref{robust} is mapped to at least one optimal solution of \eqref{reduced robust} and every preimage of an optimal solution of \eqref{reduced robust} is an optimal solution to \eqref{robust}.
+\end{proof}
+The effect of Theorem~\ref{reduced robust} on the size of a robust formulation can be very meaningful. This is better demonstrated by an example.
+\begin{exm}\label{exm: variable reduction}
+Consider the following Knapsack problem
+\begin{equation*}
+\begin{split}
+    \min\, &-2x_1-2x_2-1x_3-3x_4-4x_5-7x_6-3x_7\\
+    \text{s.t. } &x_1+x_2+2x_3+2x_4+2x_5+3x_6+3x_7 \leq 3, \\
+    &x \in \{0,1\}^n.
+\end{split}
+\end{equation*}
+Let $\hat{c}_1=\hat{c}_2=\hat{c}_7=2$, $\hat{c}_4=\hat{c}_5=1$, $\hat{c}_3=0, \hat{c}_6=3$ and $\Gamma=1$.
+The robust formulation \eqref{robust} of this problem has six additional inequalities and seven additional variables.
+A little precomputing shows that the Conflict Graph contains a clique consisting of the variables $x_3, x_4, x_5, x_6, x_7$. Thus the Clique inequality
+\[x_3 + x_4+ x_5 + x_6 + x_7 \leq 1\]
+is feasible for the problem. With Theorem~\ref{reduced robust} the robust problem can be reduced to
+\begin{equation*}
+\begin{split}
+    \min\, &-2x_1-2x_2-1x_3-3x_4-4x_5-7x_6-3x_7 + z + p_Q + p_1 +p_2\\
+    \text{s.t. } &x_1+x_2+2x_3+2x_4+2x_5+3x_6+3x_7 \leq 3, \\
+    &p_Q + z \geq x_4 + x_5 + 3x_6+ 2x_7 \\
+    &p_1 + z \geq 2x_1 \\
+    &p_2 + z \geq 2x_2 \\
+    &z \geq 0 \\
+    &p_Q,p_1,p_2 \geq 0 \\
+    &x \in \{0,1\}^n.
+\end{split}
+\end{equation*}
+This formulation has only four additionial variables and three inequalities. An optimal solution is for example $x_1=1, x_5=1, z=2$ while everything else is zero, which makes for an objective value of $-4$.
+\end{exm}
+The effect of the Clique Inequalities are twofold. 
+A reduction of variables can have very positive effects on the computation time modern MIP solvers take. Thus a reduction is worthwhile just for that sake. Furthermore along with the reduction come new Inequalities which are often improving on the original robust formulation as was already demonstrated in Example~\ref{exm: demonstrate power of cliques}. A continuation of the latest example should be enough to show the effectiveness of the combination of variable reduction and the implicit application of Theorem~\ref{thm: use inequalities for robust}.
+\begin{exm}\label{exm:variable reduction continued}
+Returning to Example~\ref{exm: variable reduction}. The relaxation of the robust problem without the variable reduction is
+\begin{equation*}
+\begin{split}
+    \min\, &-2x_1-2x_2-1x_3-3x_4-4x_5-7x_6-3x_7 + z + p_Q + p_1 +p_2\\
+    \text{s.t. } &x_1+x_2+2x_3+2x_4+2x_5+3x_6+3x_7 \leq 3, \\
+    &p_1 + z \geq 2x_1, \,
+    p_2 + z \geq 2x_2, \\
+    &p_4 + z \geq x_4, \,
+    p_5 + z \geq x_5, \\
+    &p_6 + z \geq 3x_6, \,
+    p_7 + z \geq 2x_7, \\
+    &z \geq 0 \\
+    &p_1,p_2,p_3,p_4,p_5,p_6,p_7 \geq 0 \\
+    &x \in [0,1]^n.
+\end{split}
+\end{equation*}
+A feasible solution to this formulation would be \[x=(\frac{1}{2}, \frac{1}{2},0, 0, \frac{1}{2}, \frac{1}{3},0)^T\]
+and $z=1$ and $p=0$. This solution has an objective value of $-5\frac{1}{3}$.
+Yet the inequality 
+\[p_4 + p_5+ p_6 + p_7 + z \geq x_4 + x_5 + 3x_6+ 2x_7\]
+is not feasible for the above value, since 
+\[z=1 < \frac{1}{2} + 3 \cdot\frac{1}{3}.\]
+Indeed an optimal value of the relaxed problem
+\begin{equation*}
+\begin{split}
+    \min\, &-2x_1-2x_2-1x_3-3x_4-4x_5-7x_6-3x_7 + z + p_Q + p_1 +p_2\\
+    \text{s.t. } &x_1+x_2+2x_3+2x_4+2x_5+3x_6+3x_7 \leq 3, \\
+    &p_Q + z \geq x_4 + x_5 + 3x_6+ 2x_7 \\
+    &p_1 + z \geq 2x_1 \\
+    &p_2 + z \geq 2x_2 \\
+    &z \geq 0 \\
+    &p_Q,p_1,p_2 \geq 0 \\
+    &x \in [0,1]^n,
+\end{split}
+\end{equation*}
+which makes implicit use of Theorem~\ref{thm: use inequalities for robust}, is 
+\[x=(\frac{1}{2},\frac{1}{2},0,0,1,0,0)^T\]
+and $z=1$ and $p=0$ with objective value $-5$.
+So the robust reformulation \eqref{reduced robust} brings the relaxation closer to the integer robust formulation. 
+[there is also an extended clique inequality containing $x_1,x_2,x_5$ with right side $2$, which delivers an optimal solution.]
+\end{exm}
+Clique Inequalities are a key factor for solving the robust problem with the help of relaxation techniques. To use the techniques from Examples~\ref{exm: variable reduction} and \ref{exm:variable reduction continued} it is necessary to know at least parts of the Conflict Graph.
+Unfortunately finding the complete Conflict Graph of an arbitrary IP
+is $\NP$-hard.
+\begin{lem}
+The problem of finding the Conflict Graph of
+\begin{align*}
+    \text{min } &c^T x \\
+    \text{s.t. } &Ax \leq b, \\
+    &x \in \{0,1\}^n,
+\end{align*}
+for an arbitrary binary integer program is $\NP$-hard.
+\end{lem}
+\begin{proof}
+It is well known that $3-\mathsf{SAT}$, the problem of deciding the feasibility of a logical formula in conjunctive normal form, where every clause contains a maximum of three variables in negated or unnegated form, is $\NP$-complete. This problem can be formulated as a binary integer program. For every clause $C=x \wedge y \wedge z$, where $x,y,z$ may be negated or unnegated, the inequality
+\[x + y + z \geq 1\]
+is added to the binary integer program. After all clauses are transformed to inequalities the objective value $\min\,0$ is added. One then easily sees that this integer program is solvable if and only if the logical formula is feasible. \\
+Consider the Conflict Graph of this integer program. If the program is infeasible then every variable is connected to every other variable (negated or unnegated) in the Conflict Graph. Thus the Conflict Graph is complete. If the graph is on the other hand complete there cannot be a feasible solution to the program, which follows directly from Definition~\ref{dfn: conflict graph}. Given the Conflict Graph one can determine in quadratic time in the number of vertices, if the graph is complete. Therefore the computation of the Conflict Graph cannot be done in polynomial time unless $\PP = \NP$.
+\end{proof}
+Even if the computation of the complete Conflict Graph of arbitrary binary integer problems may not be manageable in tolerable time frames the Conflict Graph can be partially constructed in reasonable time. Also for certain important problem classes the Conflict Graph can be completely computed even in low polynomial time. In particular this is the case for arbitrary Knapsack problems. Algorith~\ref{alg:FindConflictGraphconstr} does exactly that. The Algorithm is by Souza Britoa and Gambini Santos (Preprocessing and Cutting Planes with Conflict Graphs).
+ \begin{figure}
+  
+  \IncMargin{1em}
+\begin{algorithm}[H]
+\LinesNumbered
+\SetKwData{Left}{left}\SetKwData{This}{this}\SetKwData{Up}{up}
+\SetKwFunction{Union}{Union}\SetKwFunction{FindCompress}{FindCompress}
+\SetKwInOut{Input}{input}\SetKwInOut{Output}{output}
+\Input{A constraint  $a^Tx \leq b$, where $a \in \mathbb{R}^n$ and $b \in \mathbb{R}$ of a binary integer program $B$.}
+\Output{A subgraph $H_C \leq G_C$ of the Conflict Graph of the binary integer program $B$.}
+\BlankLine
+$V_C \leftarrow \emptyset$\;
+$E_C \leftarrow \emptyset$\;
+\For{$a_i$ coefficient of $a$}{
+ \If{$a_i < 0$}{ 
+	 $b \leftarrow b -a_i$\;
+	 $a_i \leftarrow -a_i$\;
+	 $V_C \leftarrow V_C \cup \{\bar{x}_i\}$\;}
+ \If{$a_i > 0$}{
+    $V_C \leftarrow V_C \cup \{x_i\}$\;   
+}
+}
+sort the coefficients $a_1, \ldots, a_n$ in ascending order\;
+without loss of generality now $0 \leq a_1 \leq a_2 \leq  \ldots \leq a_n$ and $x_i = \bar{x}_i$ whatever is element of $V_C$\;
+\If{$a_{n-1}+a_n < b$}
+{\Return $(V_C, E_C)$\;}
+find smallest index $j$ such that $a_j +a_{j+1} > b$ by the method of nested intervals\;
+$E_C \leftarrow E_C \cup \{[x_h, x_i]\mid h,i \geq j, h\neq i\}$\;
+\For{k < j}{
+find smallest index $j_k$ such that $a_k + a_{j_{k}} > b$ by the method of nested intervals\;
+$E_C \leftarrow E_C \cup \{[x_k, x_i]\mid i \geq j_k\}$\;
+}
+\Return $(V_C, E_C)$\;
+\caption{\textbf{FindConflictGraphofConstraint}}\label{alg:FindConflictGraphconstr}
+\end{algorithm}\DecMargin{1em}
+\end{figure}
+\begin{lem}
+Algorithm~\ref{alg:FindConflictGraphconstr} is correct. It has a running time of $\mathcal{O}(n \log(n))$.
+\end{lem}
+\begin{proof}
+If the coefficient of a variable $x_i$ appears negatively in the constraint. The algorithm implicitely performs a substitution of $a_i x_i$ by $-a_i(1-x_i) = -a_i \bar{x}_i$. In order to keep the inequality correct the right hand side of the inequality has to be adjusted by an addition of $-a_i$. All of this happens in lines $5$ and $6$ of the Algorithm. In line $7$ only the negated variable is added to the eventual subgraph's vertex set $V_C$ and the unnegated variable will not appear for this particular constraint. Therefore the second remark from line $14$ is justified and it should be understood that $x_i$ may also mean $\bar{x}_i$, whichever one is in the vertex set. Overall the reformulation of the constraint does not exceed linear time.\\
+The main part of the running time comes from sorting the set of coefficients. This can be achieved in $\mathcal{O}(n \log(n))$. \\
+If after sorting the coefficients $a_{n-1}+ a_n < b$ holds, no two other coefficients may exceed $b$ in the sum. Then there actually no conflicts from the constraint.
+Let $j$ be the smallest index as found in line $18$ by interval nesting (which takes logarithmic time on the set of sorted coefficients). Then for all $h,i \geq j$ with $h \neq i$ the sum
+\[a_h + a_i \geq a_{j} + a_{j+1} > b\]
+as the coefficients are sorted in ascending order. The assignments of edges in line $19$ is therefore correct.
+Similarly
+\[a_k + a_i \geq a_k + a_{j_k} > b \]
+holds for all $k < j$ and $j_k$ chosen as in line $21$, which justifies line $22$. The loop from from line $20$ itearates a maximum of $n$ times and each step needs $\mathcal{O}(\log(n))$ running time (nested intervals).
+\end{proof}
+Algorithm~\ref{alg:FindConflictGraphconstr} can be applied to every constraint of a binary integer program and the (partial) Conflict Graph can be extended with every additional constraint. This may take $\mathcal{O}(m n \log(n))$ running time, where $m$ is the number of constraints. 
+\begin{lem}\label{lem:conflict graph knapsack}
+The Conflict Graph of an arbitrary Knapsack instance can be found in $\mathcal{O}(n \log(n))$ time. 
+\end{lem}
+\begin{proof}
+Let an instance 
+\begin{align*}
+    \min\, &c^tx \\
+    \text{s.t. } &a^Tx \leq b \\
+    &x \in \{0,1\}^n
+\end{align*}
+of the Knapsack problem be given. That is $a \in \mathbb{R}_{\geq 0}^n$, $b \geq 0$ and $c \in \mathbb{R}_{\leq 0}^n$ holds. It is assumed that $a_i \leq b$. 
+Then every negated variable $\bar{x}_i$ is connected to every other variable (negated or unnegated) in the vertex set $V_C$ of the Conflict Graph, because not choosing an item $x_i$ and choosing any other item is always an option as all coefficients are positive and no item exceeds the bound of $b$ on its own.  
+It is furthermore assumed that $a_i > 0$ for all $i \leq n$. Otherwise the corresponding item can always be chosen as part of any solution. Also the indices of $a$ are assumed to be sorted already in ascending order. 
+Algorithm~\ref{alg:FindConflictGraphconstr} will then find every conflict, that is every edge from the Conflict Graph of the Knapsack problem.  \\
+To prove this let $[x_h, x_i] \in E_C$ with $h < i$. That means in particular that $x_h$ and $x_i$ cannot be chosen to be one at the same time, even if all other items are not chosen into the Knapsack (that is $x_l=0$ for $l \neq h,i$). Then $a_h + a_i > b$ must hold. If $h,i \geq j$, where $j$ is the index found in line $18$ from Algorithm~\ref{alg:FindConflictGraphconstr}, then $[x_h,x_i]$ is added to the edge set in line $19$. If $h < j$, then $i \geq j_h$, where $j_h$ is the index found in line $21$. But then $[x_h, x_i]$ is added to the edge set in line $22$.  
+\end{proof}
+\begin{cor}
+Let \begin{align*}
+    \min\, &c^tx \\
+    \text{s.t. } &A^Tx \leq b \\
+    &x \in \{0,1\}^n
+\end{align*}
+be a binary integer program with $A \in \mathbb{R}_{\geq 0}^{m \times n}$. Then the Conflict Graph $G_C=(V_C, E_C)$ of that program can be found in $\mathcal{O}(m n \log(n))$ time.
+\end{cor}
+\begin{proof}
+Let $[x_h,x_i] \in E_C$. Then in particular $y \in \{0,1\}^n$ with $y_i=y_h=1$ and $y_l=0$ for $l \neq h,i$ is not feasible for the binary integer program. Then $y$ is unfeasible for at least one constraint, which is a constraint of a Knapsack instance. Applying Algorithm~\ref{alg:FindConflictGraphconstr} to this constraint computes the desired edge of the Conflict Graph. This follows the same way as in Lemma~\ref{lem:conflict graph knapsack}.
+\end{proof}
+Algorithm~\ref{alg:FindConflictGraphconstr} is a compromise between computability and completeness. It can be considered a good compromise as many important classes of problems are solved exactly by the algorithm.
+The algorithm can be already used to compute Cliques in the conflict graph. In line $19$ the edge set is actually the edge set of a clique in the Conflict Graph. Yet to fully apply the power of Theorem~\ref{thm: variable reduction with cliques} it is best to find a clique partition of the Conflict graph.
+
+
+\chapter{Clique Partitions in the Conflict Graph}
+\section{Application of Clique Partitions to Robust Formulations}
+In order to make full use the variable reduction technique introduced in Theorem~\ref{thm: variable reduction with cliques} and demonstrated in Example~\ref{exm: variable reduction} and Example~\ref{exm:variable reduction continued}, as well as the expected improvement of the solution of the relaxed problems it seems appropriate to find as many cliques in the Conflict Graph as possible. The aim is to apply Theorem~\ref{thm: variable reduction with cliques} several times for different cliques to reduce the number of variables of the robust formulation as much as possible. The definition of a Clique Partition is needed.
+\begin{dfn}
+Let $G=(V,E)$ be a graph. A \emph{Clique Partition} of the graph $G$ is a set \[P=\{Q_1, Q_2, \ldots, Q_k\}\] such that every $Q_i$ is a clique in the graph for $i=1, \ldots, k$, 
+\[\bigcup_{i=1, \ldots, k}Q_i = V\]
+and \[Q_i \cap Q_j = \emptyset\]
+for $i,j \in \{1, \ldots, k\}$ and $i \neq j$.
+\end{dfn}
+\begin{exm}\label{exm: Clique Partitions in Conflict Graph}
+Consider again the following Knapsack instance
+\begin{equation*}
+\begin{split}
+    \min\, &-2x_1-2x_2-1x_3-3x_4-4x_5-7x_6-3x_7 \\
+    \text{s.t. } &x_1+x_2+2x_3+2x_4+2x_5+3x_6+3x_7 \leq 3, \\
+    &x \in \{0,1\}^n.
+\end{split}
+\end{equation*} and its robust formulation from Example~\ref{exm: variable reduction}.
+Applying Algorithm~\ref{alg:FindConflictGraphconstr} (the coefficients are already ordered) determines $j$ from line $18$ to be $3$. Thus there is one clique consisting of variables $\{x_3,x_4,x_5,x_6,x_7\}$. Iterating the loop from line $20$ for indices $k_1=1$ and $k_2=2$ yields cliques $\{x_1,x_6,x_7\}$ and $\{x_2,x_6,x_7\}$ (see Figure 1). The negated variables of the Conflict Graph are not interesting here, as they cannot be used to reduce the variables in the robust formulation. There are many Cliques in this graph and naturally many of them intersect.To apply Theorem~\ref{thm: variable reduction with cliques} several times on different cliques these cliques must not intersect. In the leftmost graphic from Figure 1 the Clique Partition $\{\{x_3,x_4,x_5,x_6,x_7\}, \{x_1\}, \{x_2\}\}$ is displayed. Clique two and three of this partition are not proper cliques. One application of Theorem~\ref{thm: variable reduction with cliques} yields the reduced robust formulation that was already considered in Example~\ref{exm: variable reduction}.
+Another Clique Partition would be $\{\{x_3,x_4,x_5\}, \{x_1,x_6,x_7\}, \{x_2\}\}$. Applying Theorem~\ref{thm: variable reduction with cliques} to the first clique yields the inequality
+\[p_{Q_1} + z \geq x_4 + x_5.\]
+Applying the theorem for a second time yields the reduced robust formulation
+\begin{equation*}
+\begin{split}
+    \min\, &-2x_1-2x_2-1x_3-3x_4-4x_5-7x_6-3x_7 + z + p_{Q_1} + p_{Q_2} +p_2\\
+    \text{s.t. } &x_1+x_2+2x_3+2x_4+2x_5+3x_6+3x_7 \leq 3, \\
+    &p_{Q_1} + z \geq x_4 + x_5 \\
+    &p_{Q_2} + z \geq 2x_1 + 3x_6+ 2x_7 \\
+    &p_2 + z \geq 2x_2 \\
+    &z \geq 0 \\
+    &p_{Q_1},p_{Q_2},p_2 \geq 0 \\
+    &x \in \{0,1\}^n.
+\end{split}
+\end{equation*}
+One last partition is $\{\{x_3,x_4,x_5\}, \{x_1,x_6\}, \{x_2, x_7\}\}$, which contains only proper cliques. In effect one gets a reduced robust reformulation
+\begin{equation*}
+\begin{split}
+    \min\, &-2x_1-2x_2-1x_3-3x_4-4x_5-7x_6-3x_7 + z + p_{Q_1} + p_{Q_2} +p_{Q_3}\\
+    \text{s.t. } &x_1+x_2+2x_3+2x_4+2x_5+3x_6+3x_7 \leq 3, \\
+    &p_{Q_1} + z \geq x_4 + x_5 \\
+    &p_{Q_2} + z \geq 2x_1 + 3x_6 \\
+    &p_{Q_3} + z \geq 2x_2 + 2x_7 \\
+    &z \geq 0 \\
+    &p_{Q_1},p_{Q_2},p_2 \geq 0 \\
+    &x \in \{0,1\}^n.
+\end{split}
+\end{equation*}
+For the MIP formulation of all the above problems the difference between these Clique Partitions is not that relevant in theory, as all partitions lead to only three $p$ variables and three inequalities instead of seven $p$ variables and six additional inequalities compared to the original (non robust) formulation. The difference between Clique Partitions is more relevant for the relaxed variants of the above MIPs.
+\end{exm}
+\begin{figure}
+\centering
+\begin{subfigure}{0.3\textwidth}
+\begin{tikzpicture}[scale=1, vertex/.style={circle, draw=black, thick, inner sep= 0pt, minimum size = 5pt}, background rectangle/.style={fill=black!10}, show background rectangle, aleph/.style={circle, fill=black!25, minimum size = 5pt, inner sep = 0pt}]
+	
+	\node[vertex, fill=blue!30](v1) at (0,0){$x_3$};
+	\node[vertex, fill=blue!30](v2) [below left = 4mm and 10mm of v1]{$x_4$};
+	\node[vertex, fill=blue!30](v3) [below right = 4mm and 10mm of v1]{$x_5$};
+	\node[vertex, fill=blue!30](v4) [below = 4mm of v2]{$x_6$};
+    \node[vertex, fill=blue!30](v5) [below = 4mm of v3]{$x_7$};
+    \node[vertex, fill=red!30](v6) [below = 5mm of v4]{$x_1$};
+    \node[vertex, fill=green!30](v7) [below = 5mm of v5]{$x_2$};
+    
+	\foreach \from in {v1, v2, v3, v4, v5}{
+		\foreach \to in {v1, v2, v3, v4, v5}{
+		\draw[ultra thin] (\from) to (\to);
+		}
+		}
+			\foreach \from in {v6, v4, v5}{
+		\foreach \to in {v6, v4, v5}{
+		\draw[ultra thin] (\from) to (\to);
+		}
+		}
+		\foreach \from in {v7, v4, v5}{
+		\foreach \to in {v7, v4, v5}{
+		\draw[ultra thin] (\from) to (\to);
+		}
+		}
+\end{tikzpicture}
+\end{subfigure}
+\begin{subfigure}{0.3\textwidth}
+\begin{tikzpicture}[scale=1, vertex/.style={circle, draw=black, thick, inner sep= 0pt, minimum size = 5pt}, background rectangle/.style={fill=black!10}, show background rectangle, aleph/.style={circle, fill=black!25, minimum size = 5pt, inner sep = 0pt}]
+	
+	\node[vertex, fill=blue!30](v1) at (0,0){$x_3$};
+	\node[vertex, fill=blue!30](v2) [below left = 4mm and 10mm of v1]{$x_4$};
+	\node[vertex, fill=blue!30](v3) [below right = 4mm and 10mm of v1]{$x_5$};
+	\node[vertex, fill=red!30](v4) [below = 4mm of v2]{$x_6$};
+    \node[vertex, fill=red!30](v5) [below = 4mm of v3]{$x_7$};
+    \node[vertex, fill=red!30](v6) [below = 5mm of v4]{$x_1$};
+    \node[vertex, fill=green!30](v7) [below = 5mm of v5]{$x_2$};
+    
+	\foreach \from in {v1, v2, v3, v4, v5}{
+		\foreach \to in {v1, v2, v3, v4, v5}{
+		\draw[ultra thin] (\from) to (\to);
+		}
+		}
+			\foreach \from in {v6, v4, v5}{
+		\foreach \to in {v6, v4, v5}{
+		\draw[ultra thin] (\from) to (\to);
+		}
+		}
+		\foreach \from in {v7, v4, v5}{
+		\foreach \to in {v7, v4, v5}{
+		\draw[ultra thin] (\from) to (\to);
+		}
+		}
+\end{tikzpicture}
+\end{subfigure}
+\begin{subfigure}{0.3\textwidth}
+\begin{tikzpicture}[scale=1, vertex/.style={circle, draw=black, thick, inner sep= 0pt, minimum size = 5pt}, background rectangle/.style={fill=black!10}, show background rectangle, aleph/.style={circle, fill=black!25, minimum size = 5pt, inner sep = 0pt}]
+	
+	\node[vertex, fill=blue!30](v1) at (0,0){$x_3$};
+	\node[vertex, fill=blue!30](v2) [below left = 4mm and 10mm of v1]{$x_4$};
+	\node[vertex, fill=blue!30](v3) [below right = 4mm and 10mm of v1]{$x_5$};
+	\node[vertex, fill=red!30](v4) [below = 4mm of v2]{$x_6$};
+    \node[vertex, fill=green!30](v5) [below = 4mm of v3]{$x_7$};
+    \node[vertex, fill=red!30](v6) [below = 5mm of v4]{$x_1$};
+    \node[vertex, fill=green!30](v7) [below = 5mm of v5]{$x_2$};
+    
+	\foreach \from in {v1, v2, v3, v4, v5}{
+		\foreach \to in {v1, v2, v3, v4, v5}{
+		\draw[ultra thin] (\from) to (\to);
+		}
+		}
+			\foreach \from in {v6, v4, v5}{
+		\foreach \to in {v6, v4, v5}{
+		\draw[ultra thin] (\from) to (\to);
+		}
+		}
+		\foreach \from in {v7, v4, v5}{
+		\foreach \to in {v7, v4, v5}{
+		\draw[ultra thin] (\from) to (\to);
+		}
+		}
+\end{tikzpicture}
+\end{subfigure}
+\caption{Different Clique Partitions of the (partial) Conflict Graph from Example~\ref{exm: Clique Partitions in Conflict Graph}}\label{img: Clique Partitions in Conflict Graph}
+\end{figure}
+Even though it was already used in Example~\ref{exm: Clique Partitions in Conflict Graph} an application of Theorem~\ref{thm: variable reduction with cliques} for several cliques was not made precise. This will be done in the following corollary to this theorem.
+\begin{cor}
+Let a robust formulation of an integer program \eqref{IP} of the form \eqref{robust} be given. Let furthermore $P=\{Q_1, \ldots, Q_k\}$ be a Clique Partition of the conflict graph. Then the MIP
+\begin{equation}\label{Clique Partition Reduction}
+\begin{split}
+    \min\, &\sum_{j=1}^{n} c_j x_j + \sum_{Q \in P}^{n}p_Q + \Gamma \cdot z\\
+    \text{s.t. } &Ax \leq b, \\
+    &p_{Q}+ z \geq \sum_{i \in Q} \hat{c}_ix_i \text{ for all }Q \in P \\
+  &p_Q \geq 0 \text{ for all }Q \in P \\
+  &z \geq 0, \\
+    &x \in \{0,1\}^n
+\end{split}
+\end{equation}
+has the same optimal objective value as \eqref{robust}.
+Denote by $p_{\_S}$ the vector with entries of $p$ of the index set $S \subseteq \{1, \ldots, n\}$. The map 
+\[f:(x, z, p_{\_Q_1}, \ldots, p_{\_Q_k})^T \mapsto (x, z, p_{Q_1}=\sum_{i \in Q_1}p_i, \ldots,  p_{\_Q_k}=\sum_{i \in Q_k}p_i)^T \]
+is a surjection of optimal solutions of \eqref{robust} to optimal solutions of \eqref{Clique Partition Reduction}.
+\end{cor}
+\begin{proof}
+The same methods as in Theorem~\ref{thm: variable reduction with cliques} can be used on all cliques in the clique partition $P$.
+\end{proof}
+\section{Finding Clique Partitions}
+To reduce the number of variables of a robust formulation a subgraph of the Conflict Graph is needed. Then a Clique Partition as small as possible can be found. Unfortunately the general problem of finding a Minimum Clique Partition is $\NP$-hard.
+\begin{lem}
+Given a graph $G=(V,E)$, the problem of finding a Clique Partition of minimum cardinality of $G$ is $\NP$-hard.
+\end{lem}
+\begin{proof}
+A Clique Partition of size $k$ of the graph $G$ is a Graph Coloring of size $n-k$ in the complement graph $\widetilde{G}$. That is because a clique in $G$ is an independent set in $\widetilde{G}$.
+Finding a Minimum Clique Partition is thus equivalent to finding a Maximum Graph Coloring. This is the well known $\mathsf{GRAPH-COLORING}$ problem, which is $\NP$-hard.
+\end{proof}
+Not only is the general problem of finding a Minimum Clique Partition $\NP$-hard, but this $\NP$-hardness is already relevant to integer programs with constraint matrix $A \in \mathbb{R}_{\geq 0}^{m \times n}$.
+\begin{lem}
+Let $G=(V,E)$ be an arbitrary graph and $\vert V \vert=n$. Consider the ILP
+\begin{equation*}
+\begin{split}
+    \min\, &c^Tx\\
+    \text{s.t. } &x_i + x_j \leq 1,\text{ for all }\{i,j\} \in E \\
+    &x \in \{0,1\}^n.
+\end{split}
+\end{equation*}
+Then $G$ is a subgraph of the Conflict Graph of the above problem.
+\end{lem}
+There is little hope to find minimal clique partitions of arbitrary Conflict Graphs in reasonable computation time, unless $\NP=\PP$.
+Yet for a simple but important class of ILPs the Conflict Graph has a simpler structure which makes finding a clique partition feasible.
+\begin{lem}
+The Conflict Graph of an arbitrary Knapsack instance is chordal. 
+A minimal clique partition for the Knapsack problem can be found in
+linear time.
+\end{lem}
+
+\chapter{Additional inequalities in the robust setting}
+Theorem~\ref{thm: use inequalities for robust} has already shown to have valuable impact on the treatment of problems in the robust setting and often improves the methods of finding an optimal solution to \eqref{robustoriginal}. Relaxation of \eqref{robust} reduces computation times but often resulted in fractional solutions whose objective value is too far off of an optimal integer solution to be very useful. The reformulation \eqref{Clique Partition Reduction} often reduces fractionality in the solution vectors drastically depending on the Clique Partition considered. Unfortunately the Clique Partition approach is often not enough and many non trivial IPs do have trivial Conflict Graphs.Theorem~\ref{thm: use inequalities for robust} offers solutions to that case as well. In this chapter the use of additional inequalities with non-negative coefficients of the original IP formulation in the robust setting will be analyzed. A lemma will be proved which explains the effects many of those additional inequalities have of on fractional solutions. The computational implications of these results will be analyzed. 
+\section{Additional inequalities in the robust relaxation of the Knapsack problem}
+\begin{lem}\label{lem: fractional knapsack in robust relaxation}
+Let the Knapsack problem 
+\begin{align*}
+    \min\, &c^Tx \\
+    \text{s.t. } &a^Tx \leq b \\
+    &x \in \{0,1\}^n
+\end{align*}
+and its robust variant \eqref{robust} be given. Then there is an optimal solution $(x^*,z^*,p^*)$ to the relaxed robust variant \eqref{robust relaxation} of this problem,
+so that the set 
+\[N:=\{i \in \{1, \ldots, n\} \mid 0< x^*_i <1, \hat{c}_i > 0 , a_i >0 \}\]
+contains at the most one index $j \in N$ with 
+\[\hat{c}_j x^*_j < z^*.\]
+\end{lem}
+\begin{proof}
+Let $(x^*,z^*,p^*)$ be the optimal solution chosen so that for
+\[M_{x^*}:=N \cap \{i \in \{1, \ldots, n\} \mid \hat{c}_ix^*_i < z^*\}\]
+the value $\vert M_{x^*} \vert$ is minimal. \\
+If $\vert M_{x^*} \vert \geq 2$ holds then there exist $k,l \in M_x$, so that $\hat{c}_kx^*_l < z^*$ und $\hat{c}_kx^*_k < z^*$. Without loss of generality $\frac{c_k}{c_l} \leq \frac{a_k}{a_l}$ is assumed.\\
+Choose now $y_l:=x^*_l-\delta$ and $y_k:=x^*_k+\alpha \delta$
+for 
+\[\delta \in (0, \min(\alpha^{-1}(1-x^*_k),\alpha^{-1}(z^*-\hat{c}_k x^*_k), x^*_l)\] and 
+\[\alpha \leq \frac{a_l}{a_k}.\] Define $y_i:=x_i$ for all $i \notin \{k,l\}$. \\
+Now 
+\[a_l y_l + a_k y_k = a_l x^*_l + a_k x^*_k + \delta a_l ( \frac{a_k}{a_l}\alpha-1) \leq a_l x^*_l + a_k x^*_k\]
+and
+\[c_l y_l + c_k y_k = c_l x^*_l + c_k x^*_k + \delta c_l (\frac{c_k}{c_l} \alpha - 1) \leq c_l x^*_l + c_k x^*_k .\]
+Because of optimality of the solution $\frac{c_k}{c_l} = \frac{a_k}{a_l}$ must hold, as the optimal value could be decreased otherwise. \\ 
+Now $\delta$ can be chosen so that either $y_l=0$, $y_k=1$ or $\hat{c}_ky_k=z^*$ holds. But the above inequalities show that $(y, z^*, p^*)$ is an optimal solution to the robust relaxation as well but with $\vert M_y \vert < \vert M_{x^*} \vert$, which contradicts the choice of $(x^*,z^*,p^*)$. Therefore $\vert M_{x^*} \vert \leq 1$ must hold. So there is at the most one index $j \in M_{x^*}$ with $\hat{c}_jx^*_j < z^*$, which is fully fractional. 
+\end{proof}
+Lemma~\ref{lem: fractional knapsack in robust relaxation} implies that all, except a maximum of one, fractional entries $x^*_i$ of an optimal $x$-vector solution $x^*$ of the robust relaxation suffice the equalition $\hat{c}_ix^*_i = z^* + p^*_i$. Now the following lemma restricts the number of indices for which this equality may hold, if a feasible inequality 
+\[\sum_{i=1}^n d_i \hat{c}_i x_i \leq e z + \sum_{i=1}^n d_i p_i\]
+as in Theorem~\ref{thm: use inequalities for robust} is added.
+\begin{lem}\label{lem:restriction on Eq}
+Let a relaxation of a robust formulation \eqref{robust relaxation} be given. Let a feasible inequality as in Theorem~\ref{thm: use inequalities for robust} of the form
+\[\sum_{i=1}^n d_i \hat{c}_i x_i \leq e z + \sum_{i=1}^n d_i p_i\]
+with $d_i \geq 0$ for all $i=1, \ldots, n$ be added to the relaxation. Let $(x^*,z^*,p^*)$ be an optimal solution to this LP, where $z^* \neq 0$
+Then the set \[Eq:=\{i \in \{1, \ldots, n\} \mid \hat{c}_ix^*_i=z^*+p^*_i\}\]
+suffices the condition
+\[\sum_{i \in Eq}d_i \leq e.\]
+If 
+\begin{equation}\label{eq: phi function}
+\begin{split}
+  \phi(z^*, p^*, Eq):=\min\, &\sum_{j \notin Eq}\frac{z^*c_j}{\hat{c}_j}y_j \\
+  \text{s.t. }&\sum_{j \notin Eq}\frac{z^*A_{i,j}}{\hat{c}_j}y_j \leq b-\sum_{j \in Eq}A_{i,j}x^*_j\text{ for }i=1, \ldots, m \\
+  &\sum_{j \notin Eq}d_jy_j \leq e - \sum_{i \in Eq}d_i \\
+  &0 \leq y_j < 1 \text{ for }j \notin Eq \\
+  &y_j \leq \frac{\hat{c}_j}{z^*} \text{ for }j \notin Eq
+\end{split}
+\end{equation}
+is defined, then the objective value of the relaxed LP is
+\[\sum_{j \in Eq}c_j x^*_j + \Gamma z^* + \sum_{j=1}^n p^*_j + \phi(z^*, p^*, Eq).\]
+\end{lem}
+\begin{proof}
+Take the optimal solution $(x^*,z^*,p^*)$ and consider the sum
+\[\sum_{i \in Eq} d_i \hat{c}_i x^*_i = \sum_{i \in Eq} d_i (z^*+p^*_i) = z^*(\sum_{i \in Eq} d_i) + \sum_{i \in Eq} d_i p^*_i.\]
+For indices $j \notin Eq$ $p^*_j=0$ must hold, because $\hat{c}_j x^*_j < z^*$ and therefore to minimize $p^*_j$ it must be set to $0$.
+So 
+\[z^*(\sum_{i \in Eq} d_i) + \sum_{i \in Eq} d_i p^*_i= z^*(\sum_{i \in Eq} d_i) + \sum_{i=1}^n d_i p^*_i\]
+must be valid. As the inequality 
+\[\sum_{i \in Eq} d_i \hat{c}_i x_i \leq \sum_{i=1}^n d_i \hat{c}_i x_i \leq e z + \sum_{i=1}^n d_i p_i\]
+holds, because $d_i \geq 0$ for all $i=1, \ldots, n$, the inequality
+\[ z^*(\sum_{i \in Eq} d_i) + \sum_{i=1}^n d_i p^*_i \leq e z^* + \sum_{i=1}^n d_i p^*_i\]
+and therefore
+\[0 \leq z^*(e - \sum_{i \in Eq} d_i)\]
+must hold. As $z^* \neq 0$, $\sum_{i \in Eq} d_i \leq e$ and therefore $\sum_{i \in Eq} d_i \leq e$ can be obtained.
+If $z^*, p^*$ and $Eq$ is given the values $\hat{c}_ix^*_i=z^*+p^*_i$ can be computed for $i \in Eq$. Then the values $x^*_j$ for $j \notin Eq$ suffice the inequalities
+\[\sum_{j \notin Eq}A_{i,j}x^*_j + \sum_{j \in Eq}A_{i,j}x^*_j \leq b\]
+and 
+\[\sum_{j \notin Eq}d_j \hat{c}_j x^*_j \leq z^*(e-\sum_{i \in Eq}d_i).\]
+And since $\hat{c}_j x^*_j < z^*$ the $x^*_j$ for $j \notin Eq$ form an optimal solution of 
+\begin{equation*}
+\begin{split}
+\phi(z^*, p^*, Eq):=\min\, &\sum_{j \notin Eq}c_j x_j \\
+\text{s.t. }&\sum_{j \notin Eq}A_{i,j}x_j \leq b-\sum_{j \in Eq}A_{i,j}x^*_j \text{ for }i=1, \ldots, m\\
+&\sum_{j \notin Eq}d_j\hat{c}_j x_j \leq e - \sum_{i \in Eq}d_i \\
+&0 \leq x_j \leq 1,  \hat{c}_j x_j < z^* \text{ for }j \notin Eq
+\end{split}
+\end{equation*}
+and 
+\[\sum_{j \in Eq}c_j x^*_j + \Gamma z^* + \sum_{j=1}^n p^*_j + \phi(z^*, p^*, Eq)\]
+is the objective value of the relaxed LP in consideration. 
+Now a simple substitution of $y_j=\frac{\hat{c}_j}{z^*}x_j$ for $j \notin Eq$ in the above expression yields the claim.
+\end{proof}
+\begin{rem}
+$\phi(z, p, Eq)$ really only depends on $z^*, p^*$ and $Eq$, as $\hat{c}_ix^*_i=z^* + p^*_i$ for all $i \in Eq$. 
+A value $\phi(z, p, Eq)$ can be defined for any $z \geq 0$, vector $p \in \mathbb{R}_{\geq 0}^n$ and set $Eq \subseteq \{1, \ldots, n\}$ in the same way as in \eqref{eq: phi function}. As the $y_i$ must be strictly smaller than $1$ and as the right hand side of the inequalities in \eqref{eq: phi function} is not positive for all choices of $z, p$ and $Eq$ the minimum may not exist. In that case a value of $\infty$ may be assigned. One can then say that if $\phi(z, p, Eq) = \infty$ then $z$, $p$ and $x_i=z+p_i$ for $i \in Eq$ cannot be part of an optimal solution to the robust relaxation of the Knapsack problem with the additional inequality 
+\[\sum_{i=1}^n d_i \hat{c}_i x_i \leq e z + \sum_{i=1}^n d_i p_i.\]
+\end{rem}
+Lemma~\ref{lem:restriction on Eq} is interesting in two ways. First it makes a statement about the number of items in the set $Eq$, which can be understood as a fractional equivalent of items, which determine the worst case deviation of $\Gamma$ items from their original values. Second the formulation \eqref{eq: phi function} has properties which allow to quantify to some extent the connection between $z^*$ and optimal values for $x^*_j$ with $j \notin Eq$.
+Additional valid inequalities which arise from Theorem~\ref{thm: use inequalities for robust} help to stabilize the optimal solution entries in some sense. 
+\begin{exm}\label{exm: advtg of knapsack ineq over clique}
+Recalling Example~\ref{exm: choose best item} a problem of the robust relaxation \eqref{robust relaxation} without additional inequalities is a tendency to choose $z^*$ small and the number of items not equal to zero very large. This is to even out the diminished range the values $x^*_j$ may lie in if $z^*$ is small. 
+Lemma~\ref{lem: fractional knapsack in robust relaxation} states that nearly all items with fractional values from an optimal solution of the robust relaxation of a Knapsack problem lie in the set $Eq$. In the example $\vert Eq \vert$ is equal to $n$. As the inequality 
+\[\sum_{i=1}^n x_i \leq 1\]
+is valid for the original robust problem 
+the inequality 
+\[\sum_{i=1}^n x_i \leq z + \sum_{i=1}^n p_i\]
+is valid for the robust formulation. 
+Lemma~\ref{lem:restriction on Eq} then projects that for any optimal solution of the relaxation of the robust formulation with the additional inequality, that $\vert Eq \vert = \sum_{i \in Eq} 1 \leq 1$. So the optimal solution of the relaxation without additional inequality is not a solution of the relaxation with the addition of 
+\[\sum_{i=1}^n x_i \leq z + \sum_{i=1}^n p_i.\]
+Apart from 
+\[\sum_{i=1}^n x_i \leq 1\]
+the inequalities 
+\[\sum_{i=1}^{\frac{n}{2}}x_i \leq 1\]
+and 
+\[\sum_{i=\frac{n}{2}}^{n}x_i \leq 1\]
+are valid for the original Knapsack problem as well, if $n$ is even. 
+Adding the inequalities
+\[\sum_{i=1}^{\frac{n}{2}}x_i \leq z + \sum_{i=1}^{\frac{n}{2}}p_i\]
+and 
+\[\sum_{i=\frac{n}{2}}^{n}x_i \leq z+ \sum_{i=\frac{n}{2}}^{n}p_i\] to the robust relaxation an extension of Lemma~\ref{lem:restriction on Eq} to several additional equations predicts $\vert Eq \cap \{1, \ldots, \frac{n}{2}\} \vert \leq 1$ and $\vert Eq \cap \{ \frac{n}{2}+1, \ldots, n\} \vert \leq 1$. And indeed an optimal solution could be 
+$x^*_1=x^*_n=\frac{1}{2}$ and $z^*=\frac{1}{2}$, while every other variable is zero. 
+\end{exm}
+For the classical Knapsack problem there is one valid inequality \[\sum_{i=1}^n a_i x_i \leq b\]
+with $a_i > 0$. According to Theorem~\ref{thm: use inequalities for robust} the inequality
+\[\sum_{i=1}^n a_i \hat{c}_i x_i \leq bz + \sum_{i=1}^n a_i p_i\]
+is valid for the robust formulation. How powerful is the addition of this inequality to the formulation with regards to the relaxation? The following lemma suggest an improvement over the original problem's relaxation.
+\begin{lem}\label{lem:additional knapsack ineq}
+Let the Knapsack problem 
+\begin{align*}
+    \min\, &\sum_{i=1}^n c_ix_i \\
+    \text{s.t. } &\sum_{i=1}^n a_ix_i \leq b \\
+    &x \in \{0,1\}^n
+\end{align*}
+and its robust variant \eqref{robust} be given, where it is assumed that $0 < \hat{c}_j \leq \vert c_j \vert$ for all $j \in \{1, \ldots, n\}$. According to
+Theorem~\ref{thm: use inequalities for robust} the inequality 
+\[\sum_{i=1}^n a_i \hat{c}_i x_i \leq bz + \sum_{i=1}^n a_i p_i\]
+is valid and may be added to the robust formulation. Consider now the relaxation of this problem and an optimal solution $(x^*,z^*,p^*)^T$ of this relaxation, with $z^* \neq 0$. Let 
+\[Eq:=\{i \in \{1, \ldots, n\} \mid \hat{c}_ix^*_i=z^*+p^*_i\}\]
+be the set of indices as in Lemma~\ref{lem:restriction on Eq}.
+Then either $z^* > \hat{c}_j$ for at least one $j \notin Eq$ or 
+$x^*_i=1$ for all $i \in Eq$ and there is a maximum of one index $k \notin Eq$, such that $x^*_k > 0$. In either case there is an index $m \in Eq$ with $\hat{c}_m x^*_m = z^*$. So if $z^* \leq \hat{c}_j$ for all $j \notin Eq$, then $z^*=\hat{c}_m$ for $m \in Eq$.
+\end{lem}
+\begin{proof}
+Assume $z^* \leq \hat{c}_j$ for all $j \notin Eq$. Consider 
+$\phi(z^*, p^*, Eq)$ the solution of a linear program as in Lemma~\ref{lem:restriction on Eq} with two valid inequalities
+\[\sum_{i \notin Eq} \frac{z^*}{\hat{c}_i}a_iy_i \leq b - \sum_{i \in Eq}a_i x^*_i\]
+and 
+\[\sum_{i \notin Eq}a_iy_i \leq b - \sum_{i \in Eq}a_i.\]
+By assumption $\frac{\hat{c}_j}{z^*} \geq 1$ and therefore it suffices to consider $y_j < 1$ for all $j \notin Eq$. Also by assumption $\frac{z^*}{\hat{c}_j} \leq 1$ for all $j \notin Eq$ and therefore 
+\[\sum_{i \notin Eq} \frac{z^*}{\hat{c}_i}a_iy_i \leq \sum_{i \notin Eq} a_iy_i \leq b - \sum_{i \in Eq}a_i \leq b - \sum_{i \in Eq}a_i x^*_i.\]
+Thus the second inequality dominates the first one and it is enough to use the second inequality only. The problem of finding an optimal solution to the linear program which is $\phi(z^*,p^*,Eq)$ is therefore a relaxed Knapsack problem with the restriction that $y_j < 1$ and objective function 
+\[z^*\sum_{j \notin Eq} \frac{c_j}{\hat{c}_j}y_j.\]
+The factor $z^*$ can be ignored for the computation of an optimal solution. To solve a relaxed Knapsack problem a greedy algorithm can be used, which chooses an index $k \notin Eq$ with $\frac{c_k}{\hat{c}_k a_k}$ maximal and increase $y_k$ from $0$ to $1$ as long as $a_k y_k \leq b - \sum_{i \in Eq}a_i$. As $y_k < 1$, $y_k$ cannot be increased to a maximal value of $1$. Thus there must be a value $\alpha < 1$ with $a_k \alpha = b- \sum_{i \in Eq}a_i$ and $y_k$ can be chosen to be $\alpha$. This must be the optimal solution to the minimization problem and thus $\phi(z^*,p^*,Eq)=\frac{z^*c_k}{\hat{c}_k}\alpha$. As demonstrated in Lemma~\ref{lem:restriction on Eq} the objective value to the relaxed robust problem with additional valid inequality 
+is 
+\[\sum_{j \in Eq}c_jx^*_j + \Gamma z^* + \sum_{j=1}^np_j + \phi(z^*, p^*, Eq)  = \sum_{j \in Eq}c_jx^*_j + \Gamma z^* + \sum_{j=1}^np_j +\frac{z^*c_k}{\hat{c}_k}\alpha.\]
+As $x^*_j=\frac{z^* + p^*_j}{\hat{c}_j}$ for all $j \in Eq$ and $p^*_j=0$ for $j \notin Eq$ this becomes
+\[\sum_{j \in Eq} (1+\frac{c_j}{\hat{c}_j})p^*_j + z^*(\Gamma + \sum_{j \in Eq}\frac{c_j}{\hat{c}_j} + \frac{c_k}{\hat{c}_k}\alpha).\]
+Assume $x^*_j < 1$ for one $j \in Eq$. Now set $\tilde{x}_j=1$ and $\tilde{p}_j := \hat{c}_j-z^*$. Let $\tilde{p}$ be the vector with $\tilde{p}_i:=p^*_i$ and $\tilde{x}_i:=x^*_i$ for $i \neq j$ and $\tilde{p}_j$ as defined before. The set of indices $\widetilde{Eq}=\{i \in \{1, \ldots, n\} \mid \tilde{x}_i=\tilde{p}_i + z^*\}=Eq$. As  \[b - \sum_{i \in \widetilde{Eq}}a_i = b - \sum_{i \in Eq}a_i \leq b - \sum_{i \in Eq}a_i\tilde{x}_i\]
+the first inequality of 
+$\phi(z^*, \tilde{p}, \widetilde{Eq})$ is still dominated by the second inequality and thus $y_k=\alpha$ remains an optimal solution to the LP of $\phi(z^*, \tilde{p}, \widetilde{Eq})$ and therefore $\phi(z^*, \tilde{p}, \widetilde{Eq})=\frac{z^*c_k}{\hat{c}_k}\alpha$. Again the objective value of the relaxed robust problem is
+\[\sum_{j \in Eq} (1+\frac{c_j}{\hat{c}_j})\tilde{p}_j + z^*(\Gamma + \sum_{j \in Eq}\frac{c_j}{\hat{c}_j} + \frac{c_k}{\hat{c}_k}\alpha) \leq \sum_{j \in Eq} (1+\frac{c_j}{\hat{c}_j})p^*_j + z^*(\Gamma + \sum_{j \in Eq}\frac{c_j}{\hat{c}_j} + \frac{c_k}{\hat{c}_k}\alpha),\]
+because $(1+\frac{c_j}{\hat{c}_j}) \leq 0$ as $c_j < 0$ and $\hat{c}_j \leq \vert c_j \vert$. Thus $x^*_j$ can be chosen to be $1$. \\
+To prove that there exists an $m \in Eq$, such that $\hat{c}_mx^*_m=z^*$, let $m \in Eq$ be the index such that $p^*_m$ is minimal among all values $p^*_i$ with $i \in Eq$. Define $\tilde{p}_i:=p^*_i-p^*_m \geq 0$ for all $i \in Eq$, and $\tilde{p}_j:=p^*_j=0$ for all $j \notin Eq$. Define furthermore $\tilde{z}=z^*+p^*_m$. Then 
+\[\sum_{i \in Eq}\tilde{p}_i + \Gamma \tilde{z} = \sum_{i \in Eq}p^*_i + \Gamma z^* + p^*_m (\Gamma -\vert Eq \vert) \geq \sum_{i \in Eq}p^*_i + \Gamma z^*.\]
+On the other hand one can define $\bar{z}:=0$, $\bar{p}_i:=p^*_i + z^*$ for $i \in Eq$ and $\bar{p}_j:=p^*_j=0$ for $j \notin Eq$. Then
+\[\sum_{i \in Eq}\bar{p}_i + \Gamma \bar{z} = \sum_{i \in Eq}p^*_i + \Gamma z^* + z^*_m (\vert Eq \vert - \Gamma) \geq \sum_{i \in Eq}p^*_i + \Gamma z^*\]
+and from both inequalities it can be concluded that $\vert Eq \vert = \Gamma$ or $p^*_m=0$ or $z^*=0$. As $z^* > 0$ was assumed, either
+$\vert Eq \vert = \Gamma$ holds, in which case $(x^*, \tilde{z}, \tilde{p})^T$ is an optimal solution as well, or $p^*_m=0$. In both cases there is a solution and an index $m \in Eq$, such that $p^*_m=0$ and therefore $\hat{c}_m x^*_m= z^*$ for one index $m \in Eq$.
+\end{proof}
+The proof of the previous lemma demonstrates the utility of an inequality 
+\[\sum_{i=1}^n a_i \hat{c}_i x_i \leq bz + \sum_{i=1}^n a_i p_i\]
+in addition to the usual inequalities, in particular the original Knapsack inequality, in the robust relaxation. The function $\phi$ from Lemma~\ref{lem:restriction on Eq} shows that the additional inequality stabilizes the values of items outside of the set $Eq$, if the value of $z$ becomes too small. Without this additional inequality for small values of $z$ the solution vector of the LP does depend on $z$. Important statements about the solution structure can be made and there is always a guaranteed lower bound on $z^*$.
+\section{Analysis of the quality of Clique Inequalities}
+In principle the reasoning from the proof of Lemma~\ref{lem:additional knapsack ineq} applies to all kinds of valid inequalities derived from Theorem~\ref{thm: use inequalities for robust}
+\[\sum_{i=1}^n d_i \hat{c}_i x_i \leq e z + \sum_{i=1}^n d_i p_i,\]
+where one special case are the Clique Inequalities which were crucial for the variable reduction as in Theorem~\ref{thm: variable reduction with cliques}. In Example~\ref{exm: advtg of knapsack ineq over clique} it was demonstrated that using Theorem~\ref{thm: use inequalities for robust} on the valid Knapsack inequality directly and adding the resulting inequality to the robust relaxation may have an advantage over applying the same procedure on a number of Clique Inequalities as in \eqref{Clique Partition Reduction}.
+This is not that surprising considering that valid Clique Inequalities often do not carry all the information about the interconnections between the variables, whereas the Knapsack inequality defines those interconnections. This is also suggested by Lemma~\ref{lem:restriction on Eq}, where the set $Eq$ is often much more restricted by the original Knapsack inequality than an arbitrary Clique Inequality. \\
+The same can be said about the robust formulations of IPs
+\eqref{robust}, where the matrix $A \in \mathbb{R}^{m \times n}_{\geq 0}$ has only positive entries. In that case it may be better for the quality of a solution to the relaxation to apply Theorem~\ref{thm: use inequalities for robust} to each row of $Ax \leq b$ and adding each inequality to the robust formulation, instead of using the clique approach.  \\
+Still, using the approach with Clique Partitions \eqref{Clique Partition Reduction} often reduces the number of variables and inequalities substantially which improves the running time of common solvers for LPs. The number of variables and inequalities becomes a real issue in bigger instances with thousands of variables and inequalities. In case the matrix $A$ does contain negative entries, Theorem~\ref{thm: use inequalities for robust} cannot be used directly on the matrix rows, but in this case the clique approach remains an option.  
+%\begin{e      xm} 
+%For a directed Graph $G=(V,A)$, where $A \subseteq V %\times V$. The existence of a path between two nodes $s,t %\in V$ can be formulated as the IP:
+%\begin{equation*}
+    %\begin{split}
+        %\min \,& \epsilon \cdot \sum_{e \in E}x_e\\
+        %\text{s.t. }& \sum_{e \in \delta_+(s)}x_e - %\sum_{e \in \delta_-(s)}x_e = 1  \\
+        %& \sum_{e \in \delta_+(t)}x_e - \sum_{e \in %\delta_-(t)}x_e = -1\\
+        %& \sum_{e \in \delta_+(v)}x_e - \sum_{e \in %\delta_-(v)}x_e = 0\text{ for all }\{v\} \in V %\setminus \{s,t\} \\
+  %      &x_e \in \{0,1\}^{\vert E \vert},
+ %   \end{split}
+%\end{equation*}
+%where $\epsilon > 0$ is small and where $\delta_+(v)=\{e %\in E \mid \exists w\in V \,: e=(v,w)\}$ and where %$\delta_-(v)=\{e \in E \mid \exists w\in V \,: e=(w,v)\}$ %for all $v \in V$. Now one obtains a robust variant of %this problem by setting $\hat{c}_e=1$ ($c_e=\epsilon$) for %all $e \in E$. Then
+%\begin{equation*}
+%    \begin{split}
+        %\min \,& \epsilon \cdot \sum_{e \in E}x_e+ \max_{S %\subseteq E, \vert S \vert = k} \sum_{s \in %S}x_s\\
+        %\text{s.t. }& \sum_{e \in \delta_+(s)}x_e - %\sum_{e \in \delta_-(s)}x_e = 1  \\
+        %& \sum_{e \in \delta_+(t)}x_e - \sum_{e \in %\delta_-(t)}x_e = -1\\
+        %& \sum_{e \in \delta_+(v)}x_e - \sum_{e \in %\delta_-(v)}x_e = 0\text{ for all }\{v\} \in V %\setminus \{s,t\} \\
+%        &x_e \in \{0,1\}^{\vert E \vert}
+%    \end{split}
+%\end{equation*}
+%has a solution with objective value $\geq k+1$, if there %is a path of length $$
+%\end{exm}
+\bibliographystyle{plain}
+\bibliography{reducedBibliography}
+\end{document}
