@@ -1,0 +1,93 @@
+\documentclass[titlepage, a4paper]{amsbook}
+\usepackage[T1]{fontenc}
+\usepackage[utf8, latin1]{inputenc}
+\usepackage[ngerman, english]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[T1]{fontenc}
+\usepackage{eurosym}
+\usepackage{selinput}
+\usepackage{graphicx}
+\usepackage[boxed]{algorithm2e}
+\usepackage{float}
+\usepackage{listings}
+\usepackage{longtable}
+\usepackage{array}
+
+\linespread{1.2}
+% http://www.gap-system.org/Manuals/doc/ref/chap4.html
+\lstdefinelanguage{GAP}{%
+  morekeywords={%
+    Assert,Info,IsBound,QUIT,%
+    TryNextMethod,Unbind,and,break,%
+    continue,do,elif,%
+    else,end,false,fi,for,%
+    function,if,in,local,%
+    mod,not,od,or,%
+    quit,rec,repeat,return,%
+    then,true,until,while%
+  },%
+  sensitive,%
+  morecomment=[l]\#,%
+  morestring=[b]",%
+  morestring=[b]',%
+}[keywords,comments,strings]
+
+\newcommand{\R}{\ensuremath{\mathbb{R}}}
+\newcommand{\N}{\ensuremath{\mathbb{N}}}
+\usepackage[variablett]{lmodern}
+\usepackage{xcolor}
+\lstset{
+  basicstyle=\ttfamily,
+  keywordstyle=\color{red},
+  stringstyle=\color{blue},
+  commentstyle=\color{green!70!black},
+  columns=fullflexible,
+}
+\newtheoremstyle{break}%
+{}{}%
+{}{}%
+{}{}%  % Note that final punctuation is omitted.
+{\newline}{}
+\theoremstyle{plain}
+ \newtheorem{thm}{Theorem}[chapter]
+ \newtheorem{prop}[thm]{Proposition}
+ \newtheorem{lem}[thm]{Lemma}
+ \newtheorem{cor}[thm]{Corollary}
+ \newtheorem{alg}[thm]{Algorithm}
+\theoremstyle{break}
+ \newtheorem{exm}[thm]{Example}
+\theoremstyle{definition}
+ \newtheorem{dfn}[thm]{Definition}
+\theoremstyle{remark}
+ \newtheorem{rem}[thm]{Remark}
+ \numberwithin{equation}{thm}
+ 
+\binoppenalty=9999
+\relpenalty=9999
+\DeclareMathOperator{\NP}{NP}
+\begin{document}
+Nochmal zu moeglicherweise starken Ungleichungen
+\[\sum_{j=1}^n a_j p_j + bz \geq \sum_{j=1}^n a_j \hat{c}_j x_j,\]
+mit $a_j \geq 0$.
+Angenommen (wie Bertsimas), dass $[0,\hat{c}_n], [\hat{c}_{n}, \hat{c}_{n-1}], \ldots, [\hat{c}_{2},\hat{c}_{1}], [\hat{c}_{1}, \infty]$. 
+Es gilt 
+\[p_j \leq \max\{\hat{c}_{j}x_j-z,0\}.\]
+Und damit
+\[\sum_{j=1}^n a_j p_j \leq \sum_{j=1}^n a_j \max\{\hat{c}_{j}x_j-z,0\}.\]
+Aber 
+\begin{equation*}
+\sum_{j=1}^n a_j \max\{\hat{c}_{j}x_j-z,0\} =    \begin{cases}
+    \sum_{j=1}^{l-1}a_j(\hat{c}_{j}x_j-z) \,, z \in [\hat{c}_{l},\hat{c}_{l-1}] \\
+    0 \,, else
+    \end{cases}
+\end{equation*}
+Fuer $z \in [\hat{c}_{l},\hat{c}_{l-1}]$
+erhalten wir die neue Ungleichung als:
+\[\sum_{j=1}^{l-1}a_j(\hat{c}_{j}x_j-z) + bz \geq \sum_{j=1}^n a_j \hat{c}_j x_j\]
+oder auch 
+\[(b-\sum_{j=1}^{l-1}a_j)z \geq \sum_{j=l}^n a_j \hat{c}_j x_j\]
+Daraus ergeben sich ja neue Branchingregeln, bzw. man kann mit geschickten Ungleichungen einige Werte von $z$ ausschliessen.
+Oder man reduziert wie bei Bertsimas die Loesung auf $n-1$(??) Instanzen des nicht robusten Problems und kann mit dieser Ungleichung vielleicht einiges reduzieren.
+Ist das interessant?
+\end{document}
