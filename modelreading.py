@@ -13,7 +13,7 @@ import mappedqueue as mapq
 try:
 
     # Create a new model
-    m = gp.read('acc-tight2.mps')
+    m = gp.read('C:/Users/mariu/OneDrive/Dokumente/Python Scripts/acc-tight2.mps')
     #m=gp.Model('mip1')
     # # Create variables
     #x1 = m.addVar(vtype=GRB.BINARY, name="x1")
@@ -220,7 +220,12 @@ try:
                                                 self.vartobestclique[var]=clique
                 for w in self.vartobestclique[var]:
                     #set the best clique already for the other variables
-                    self.vartobestclique[w]=self.vartobestclique[var]
+                    try:
+                        po=set(self.vartobestclique[w]) - set(self.vartobestclique[var])
+                        if po:
+                            self.vartobestclique[w]=list(po)
+                    except:
+                        self.vartobestclique[w]=self.vartobestclique[var]
                 self.Cliques.append(self.vartobestclique[var])                                           
         def FindCliquePartitionDSatur(self):
             self.Cliques=[]
