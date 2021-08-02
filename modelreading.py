@@ -184,6 +184,7 @@ try:
             self.Equations=[]
             self.vartobestclique={}
             self.vardegree={}
+            self.vartovalue={}
         def FindCliquePartitionDefault(self):
             C=self.Cliques
             self.Cliques=[]
@@ -235,9 +236,11 @@ try:
             posscliques={}
             i=0
             for var in self.vartovar:
+                #first entry is sorted upon, second entry is only for avoiding problems with the priority queue
                 coloredneigh.append((0,i,var))
                 vartoentry[var]=i
                 posscliques[var]=[]
+                #the vertex with the least number of neighbours is found here
                 if i==0:
                     mini=var
                     leng=len(self.vartovar[var])
@@ -247,27 +250,31 @@ try:
                         leng=len(self.vartovar[var])
                     
                 i+=1
+            #this is the priority queue
             q=mapq.MappedQueue(coloredneigh)
             q.remove(mini)
+            #cliques are numbered starting from 0
             self.vartobestclique[mini]=0
             self.Cliques.append([mini])
+            #possvertices is a list with indices for every available clique, and entries a set of vertices available for this clique 
             possvertices.append(set())
             nextclique=1
             possvertices.append(set())
             for v in self.vartovar[mini]:
+                #update(v) increases the value of variable v by 1 in queue, so it moves down the queue
                 q.update(v)
                 possvertices[0]|set([v])
                 de=set(posscliques[v])
                 de=de|set([0])
                 posscliques[v]=list(de)
-            print(possvertices[0])
             while len(q.h) > 0:
                 mini=q.pop()
                 mi=nextclique
+                #here is the choice of cliques; can be changed to a procedure where not the clique
+                #with smallest number but clique with other criterion is chosen, maybe try priority queue here as well
                 for cli in posscliques[mini[2]]:
                     if cli < mi:
                         mi=cli
-                print(mi)
                 if mi==nextclique:
                     nextclique+=1
                     self.vartobestclique[mini[2]]=mi
@@ -284,11 +291,101 @@ try:
                             continue
                     continue
                 for cli in posscliques[mini[2]]:
+                    #remove the current vertex from all cliques as possible vertex
                     possvertices[cli]=possvertices[cli]-{mini[2]}
                     #posscliques.pop(mini[2])
                 n=set(self.vartovar[mini[2]])
+                #remove all possible vertices for the best clique, which are not neighbours of mini
                 possvertices[mi]=possvertices[mi] & n
-                #print(mi,'possvertices: ',possvertices[mi])
+                #check this part again; why only update the rest?
+                rest=n-possvertices[mi]
+                for v in n:
+                    try:
+                        q.update(v)
+                        if v in rest:
+                            posscliques[v]=posscliques[v]-set([mi])
+                    except:
+                        continue
+                self.vartobestclique[mini[2]]=mi
+                self.Cliques[mi].append(mini[2])
+        def FindCliquePartitionDSaturWeighted(self):
+            self.Cliques=[]
+            coloredneigh=[]
+            vartoentry={}
+            possvertices=[]
+            cliquetoweight=[]
+            posscliques={}
+            i=0
+            for var in self.vartovar:
+                #first entry is sorted upon, second entry is only for avoiding problems with the priority queue
+                coloredneigh.append((0,i,var))
+                vartoentry[var]=i
+                posscliques[var]=[]
+                #the vertex with the least number of neighbours is found here
+                if i==0:
+                    mini=var
+                    leng=len(self.vartovar[var])
+                else:
+                    if len(self.vartovar[var]) < leng:
+                        mini=var
+                        leng=len(self.vartovar[var])
+                    
+                i+=1
+            #this is the priority queue
+            q=mapq.MappedQueue(coloredneigh)
+            q.remove(mini)
+            #cliques are numbered starting from 0
+            self.vartobestclique[mini]=0
+            self.Cliques.append([mini])
+            #possvertices is a list with indices for every available clique, and entries a set of vertices available for this clique 
+            possvertices.append(set())
+            cliquetoweight.append(self.vartoweight[mini])
+            nextclique=1
+            possvertices.append(set())
+            for v in self.vartovar[mini]:
+                #update(v) increases the value of variable v by 1 in queue, so it moves down the queue
+                q.update(v)
+                possvertices[0]|set([v])
+                de=set(posscliques[v])
+                de=de|set([0])
+                posscliques[v]=list(de)
+            while len(q.h) > 0:
+                mini=q.pop()
+                mi=nextclique
+                #here is the choice of cliques; can be changed to a procedure where not the clique
+                #with smallest number but clique with other criterion is chosen, maybe try priority queue here as well
+                for cli in posscliques[mini[2]]:
+                    try:
+                        #choose the clique for which the average weight, after adding the new vertex does differ the least
+                        #this is to compute cliques with vertices of similar weight
+                        if (cliquetoweight[cli] + self.vartoweight[mini[2]])/(len(self.Cliques[cli])+1) < (cliquetoweight[mi] + self.vartoweight[mini[2]])/(len(self.Cliques[mi])+1):
+                            mi=cli
+                    except:
+                        mi=cli
+                if mi==nextclique:
+                    nextclique+=1
+                    self.vartobestclique[mini[2]]=mi
+                    possvertices.append(set())
+                    cliquetoweight.append(self.vartoweight[mini[2]])
+                    self.Cliques.append([mini[2]])
+                    for v in self.vartovar[mini[2]]:
+                        try:
+                            q.update(v)
+                            possvertices[mi]|set([v])
+                            de=set(posscliques[v])
+                            de=de|set([mi])
+                            posscliques[v]=list(de)
+                        except:
+                            continue
+                    continue
+                for cli in posscliques[mini[2]]:
+                    #remove the current vertex from all cliques as possible vertex
+                    possvertices[cli]=possvertices[cli]-{mini[2]}
+                    #posscliques.pop(mini[2])
+                n=set(self.vartovar[mini[2]])
+                #remove all possible vertices for the best clique, which are not neighbours of mini
+                possvertices[mi]=possvertices[mi] & n
+                #check this part again; why only update the rest?
                 rest=n-possvertices[mi]
                 for v in rest:
                     try:
@@ -298,7 +395,7 @@ try:
                         continue
                 self.vartobestclique[mini[2]]=mi
                 self.Cliques[mi].append(mini[2])
-               # print(possvertices, posscliques)
+
                 
                 
         
