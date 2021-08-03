@@ -296,16 +296,18 @@ try:
                     #posscliques.pop(mini[2])
                 n=set(self.vartovar[mini[2]])
                 #remove all possible vertices for the best clique, which are not neighbours of mini
+                rest=possvertices[mi]-n 
                 possvertices[mi]=possvertices[mi] & n
                 #check this part again; why only update the rest?
-                rest=n-possvertices[mi]
                 for v in n:
                     try:
                         q.update(v)
-                        if v in rest:
-                            posscliques[v]=posscliques[v]-set([mi])
                     except:
                         continue
+                for v in rest:
+                    #this may be slower than O(n) in the worst case, but sets are easier to handle and more space
+                    #efficient than an indicator function
+                    posscliques[v]=posscliques[v]-set([mi])
                 self.vartobestclique[mini[2]]=mi
                 self.Cliques[mi].append(mini[2])
         def FindCliquePartitionDSaturWeighted(self):
