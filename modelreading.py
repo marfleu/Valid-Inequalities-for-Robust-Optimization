@@ -15,39 +15,39 @@ from bidict import bidict
 try:
 
     # Create a new model
-    m = gp.read('C:/Users/mariu/OneDrive/Dokumente/Python Scripts/ab71-20-100.mps')
-    #m=gp.Model('mip1')
+    #m = gp.read('C:/Users/mariu/OneDrive/Dokumente/Python Scripts/ab71-20-100.mps')
+    m=gp.Model('mip1')
     # # Create variables
-    # x1 = m.addVar(vtype=GRB.BINARY, name="x1")
-    # x2 = m.addVar(vtype=GRB.BINARY, name="x2")
-    # x3 = m.addVar(vtype=GRB.BINARY, name="x3")
-    # x4 = m.addVar(vtype=GRB.BINARY, name="x4")
-    # x5 = m.addVar(vtype=GRB.BINARY, name="x5")
-    # x6 = m.addVar(vtype=GRB.BINARY, name="x6")
-    # x7 = m.addVar(vtype=GRB.BINARY, name="x7")
-    # x8 = m.addVar(vtype=GRB.BINARY, name="x8")
-    # x9 = m.addVar(vtype=GRB.BINARY, name="x9")
-    # x10 = m.addVar(vtype=GRB.BINARY, name="x10")
-    # x11 = m.addVar(vtype=GRB.BINARY, name="x11")
-    # x12 = m.addVar(vtype=GRB.BINARY, name="x12")
-    # x13 = m.addVar(vtype=GRB.BINARY, name="x13")
-    # x14 = m.addVar(vtype=GRB.BINARY, name="x14")
-    # x15 = m.addVar(vtype=GRB.BINARY, name="x15")
-    # # Set objective
-    # m.setObjective(-x1 - x2 - 2 * x3, GRB.MINIMIZE)
+    x1 = m.addVar(vtype=GRB.BINARY, name="x1")
+    x2 = m.addVar(vtype=GRB.BINARY, name="x2")
+    x3 = m.addVar(vtype=GRB.BINARY, name="x3")
+    x4 = m.addVar(vtype=GRB.BINARY, name="x4")
+    x5 = m.addVar(vtype=GRB.BINARY, name="x5")
+    x6 = m.addVar(vtype=GRB.BINARY, name="x6")
+    x7 = m.addVar(vtype=GRB.BINARY, name="x7")
+    x8 = m.addVar(vtype=GRB.BINARY, name="x8")
+    x9 = m.addVar(vtype=GRB.BINARY, name="x9")
+    x10 = m.addVar(vtype=GRB.BINARY, name="x10")
+    x11 = m.addVar(vtype=GRB.BINARY, name="x11")
+    x12 = m.addVar(vtype=GRB.BINARY, name="x12")
+    x13 = m.addVar(vtype=GRB.BINARY, name="x13")
+    x14 = m.addVar(vtype=GRB.BINARY, name="x14")
+    x15 = m.addVar(vtype=GRB.BINARY, name="x15")
+    # Set objective
+    m.setObjective(-x1 - x2 - 2 * x3, GRB.MINIMIZE)
 
     # # Add constraint: x + 2 y + 3 z <= 4
-    # m.addConstr(x1 + x2 + x3 <= 1, "c0")
-    # m.addConstr(x4 + x5 + x6 <= 1, "c1")
-    # m.addConstr(x6 + x7 + x8 <= 1, "c2")
-    # m.addConstr(x9 + x7 + x8 <= 1, "c3")
-    # m.addConstr(x10 + 2*x11 + 2*x12+ x1 <= 2, "c4")
-    # m.addConstr(x13 + x2 + x3 - x15 <= 1, "c5")
-    # m.addConstr( x2 + x5 <= 1, "c6")
-    # m.addConstr( x4 + x3 +x5 <= 1, "c0")
-    # Add constraint: x + y >= 1
+    m.addConstr(x1 + x2 + x3 <= 1, "c0")
+    m.addConstr(x4 + x5 + x6 <= 1, "c1")
+    m.addConstr(x6 + x7 + x8 <= 1, "c2")
+    m.addConstr(x9 + x7 + x8 <= 1, "c3")
+    m.addConstr(x10 + 2*x11 + 2*x12+ x1 <= 2, "c4")
+    m.addConstr(x13 + x2 + x3 - x15 <= 1, "c5")
+    m.addConstr( x2 + x5 <= 1, "c6")
+    m.addConstr( x4 + x3 +x5 <= 1, "c0")
+    #Add constraint: x + y >= 1
     #m.addConstr(4* x1 + 3 * x2 + x10 +x9 +2* x8 <= 3, "c1")
-    #m.update()
+    m.update()
     
     # Optimize model
     #m.optimize()
@@ -71,6 +71,10 @@ try:
         g.setObjective(expr, GRB.MINIMIZE)
         g.update()
         return expr
+    
+    def readCHat(file):
+        print(file)
+        
         
 
     def buildConflictGraph(g, adjacency=True):
@@ -125,7 +129,133 @@ try:
                     vartoclique[l[n][k][0]].append((n,k))
                 except:
                     vartoclique[l[n][k][0]]=[(n,k)]
-                    vartovar[numbering[l[n][k][0]]]=[0]*index
+                    if adjacency:
+                        vartovar[numbering[l[n][k][0]]]=[0]*index
+            b-=adjustb
+            up=len(l[n])-2
+            if up < 0:
+                continue
+            down=0
+            if (equality and l[n][up][1]+l[n][up+1][1] <= b) or (not equality and l[n][up][1]+l[n][up+1][1] < b):
+                n+=1
+                C.append(Temp)
+                continue
+            s = int((up)/2)
+            #interval nesting starts
+            while not (up==down):
+                if (not equality and l[n][s][1]+l[n][s+1][1] >= b) or (equality and l[n][s][1]+l[n][s+1][1] > b):
+                    up=s
+                    s=int((up+down)/2)
+                    if s==down:
+                        break
+                else:
+                    down=s
+                    s=int((up+down)/2)
+                    if s==down:
+                        s=up
+                        break
+            Temp.append((up,up))
+            #Cliques are saved in the form: index from start element, uninterrupted 
+            if adjacency:
+                #this is very costly in some instances, as for this may take m*n^2 operations,
+                #if many variables occur in one clique inequality
+                for k in range(up,len(l[n])):
+                    for j in range(k+1,len(l[n])):
+                            if l[n][k][2]==1 and l[n][j][2]==1:
+                                #vartovar[l[n][k][0]].append(l[n][j][0].VarName)
+                                #vartovar[l[n][j][0]].append(l[n][k][0].VarName)
+                                vartovar[numbering[l[n][k][0]]][numbering[l[n][j][0]]] =1
+                                vartovar[numbering[l[n][j][0]]][numbering[l[n][k][0]]] =1
+                                #vartovar[l[n][k][0]]=list(set(vartovar[l[n][k][0]]))
+                                #vartovar[l[n][j][0]]=list(set(vartovar[l[n][j][0]]))
+            s=up
+            for j in range(0,s):
+                up=len(l[n])-1
+                down=s
+                t = int((up+down)/2)
+                if (equality and l[n][up][1]+l[n][j][1] <= b) or (not equality and l[n][up][1]+l[n][j][1] < b):
+                    continue
+                while not (up==down):
+                    if (not equality and l[n][t][1]+l[n][j][1] >= b) or (equality and l[n][t][1]+l[n][j][1] > b):
+                        up=t
+                        t=int((up+down)/2)
+                        if t==down:
+                            break
+                    else:
+                        down=t
+                        t=int((up+down)/2)
+                        if t==down:
+                            t=up
+                            break
+                Temp.append((j,up)) 
+                if adjacency:
+                    for k in range(up,len(l[n])):
+                        if l[n][k][2]==1 and l[n][j][2]==1:
+                            vartovar[numbering[l[n][k][0]]][numbering[l[n][j][0]]] =1
+                            vartovar[numbering[l[n][j][0]]][numbering[l[n][k][0]]] =1
+            C.append(Temp)
+            #if n % 1 == 0:
+             #   print(C[n], n)
+            n+=1
+        return [C,l,vartovar,vartoclique, numbering]
+    
+    def buildWeightedConflictGraph(g, weights, cutoff, adjacency=True):
+        constrs=g.getConstrs()
+        n=0
+        l=[]
+        C=[]
+        vartoclique={}
+        vartovar={}
+        index=0
+        numbering=bidict({})
+        #initialise map variables <--> indices
+        for var in g.getVars():
+            numbering[var]=index
+            index+=1
+        for con in range(0,len(constrs)):
+            adjustb=0
+            b=constrs[con].RHS
+            l.append([])
+            Temp=[]
+            c=g.getRow(constrs[con])
+            #print(n, c)
+            typ=constrs[con].sense
+            #handle the different kinds of (in)equalities possible; in particular the order has to be changed
+            if typ == '<=' or typ=='>=' or typ =='==':
+                equality=True
+            else:
+                equality=False
+            if typ == '>' or typ=='>=':
+                typ=-1
+            else:
+                typ=1
+            #there are only equalities
+            equality=True
+            #inverse all signs, if the inequalities are > or >=:
+            b=b*typ
+            #initialize the variables and adjust the right hand sides:
+            for i in range(0,c.size()):  
+                #permute through all elements of the constraint
+                coff=c.getCoeff(i)*typ   
+                #inverse the sign of the coefficient
+                var=c.getVar(i)
+                if coff > 0 and weights[var.VarName] > cutoff:
+                    #variable with positive coefficient is only considered, if its predefined
+                    #weight exceeds a given cutoff value
+                    l[n].append([var,coff, 1]) 
+                    #l[n][i] contains variable at position 0, coefficinet at 1 and 0 at 2, if we consider the complement
+                elif coff < 0:
+                    adjustb+=coff
+                    l[n].append([var,-coff,0])
+            l[n]=sorted(l[n],key=lambda x: x[1])
+            #initialize links var --> clique, var --> var:
+            for k in range(0,len(l[n])):
+                try:
+                    vartoclique[l[n][k][0]].append((n,k))
+                except:
+                    vartoclique[l[n][k][0]]=[(n,k)]
+                    if adjacency:
+                        vartovar[numbering[l[n][k][0]]]=[0]*index
             b-=adjustb
             up=len(l[n])-2
             if up < 0:
@@ -210,7 +340,6 @@ try:
             self.Cliques=[]
             l=self.Equations
             for var in self.vartoclique:
-                print(var)
                 try:
                     a=self.vartobestclique[var]
                     #it can be assumed that the maximal clique of var has already been cound
@@ -219,7 +348,6 @@ try:
                     self.vartobestclique[var]=[var]
                     if len(self.vartoclique[var])>0:
                         for tup in self.vartoclique[var]:
-                            print(tup)
                             k=tup[1]
                             n=tup[0]
                             if C[n]==[]:    
@@ -438,7 +566,7 @@ try:
         if withcliques:
             if cliquemethod=="default":
                 G=ConflictGraph()
-                [G.Cliques,G.Equations,G.vartovar,G.vartoclique, G.numbering]=buildConflictGraph(g)
+                [G.Cliques,G.Equations,G.vartovar,G.vartoclique, G.numbering]=buildConflictGraph(g, False)
                 G.FindCliquePartitionDefault()
                 Cliques=G.Cliques
             elif cliquemethod=="dsatur":
@@ -457,14 +585,13 @@ try:
             except:
                 break
         for var in Vars:
-            pvalues[var]=g.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
-            expr1=pvalues[var]+z
             try:
                 if cHat[var.VarName] >= 0:
                     pass
             except:
                 try:
-                    r=rand.random()
+                    #r=rand.random()  ###keep this random option for now
+                    r=rand.choice([0.2,0.4,0.6,0.8])
                     if abs(objVars[var]) > 0:
                         cHat[var.VarName]=abs(r*objVars[var])
                     else:
@@ -473,9 +600,9 @@ try:
                 except:
                     r=rand.random()
                     cHat[var.VarName]=r
-            expr2=cHat[var.VarName]*var
-            robEq[var]=g.addConstr(expr1 >= expr2)
-            g.update()
+            # expr2=cHat[var.VarName]*var
+            # robEq[var]=g.addConstr(expr1 >= expr2)
+            # g.update()
         for cli in Cliques:
             if withcliques:
                 pvalues[cli[0]]=g.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
@@ -503,9 +630,11 @@ try:
             m1=m.copy()
             t0=time.time()
             cHat, pvalues, z = RobustFormulation(m, 20)
+            p=len(pvalues)
             t0=time.time()-t0
             t1=time.time()
-            RobustFormulation(m1, 20, True, "dsatur", cHat)
+            cHat, pvalues, z = RobustFormulation(m1, 20, True, "default", cHat)
+            p1=len(pvalues)
             t1=time.time() -t1
             g=m.relax()
             g1=m1.relax()
@@ -515,16 +644,21 @@ try:
             t3=time.time()
             g1.optimize()
             t3=time.time() -t3
+            l=[y for y in g.X if abs(y)>0.001]
+            l1=[y for y in g1.X if abs(y)>0.001]
             print('Objective Value model 0: ',g.ObjVal)
             print('Times model 0: ',t0, t2)
+            print('Number of nonzeros of model 0:', len(l))
+            print('Number of p-values of model 0:', p)
             print('Objective Value model 1: ',g1.ObjVal)
             print('Times model 1: ',t1, t3)
-     
+            print('Number of nonzeros of model 1:', len(l1))
+            print('Number of p-values of model 1:', p1)
     #G=ConflictGraph()       
     #[G.Cliques,G.Equations,G.vartovar,G.vartoclique, G.numbering]=buildConflictGraph(m)
     #G.FindCliquePartitionDSatur()
     #buildConflictGraph(m) 
-    CompareRobustMethods(['C:/Users/mariu/OneDrive/Dokumente/Python Scripts/ab71-20-100.mps'])           
+    CompareRobustMethods(['C:/Users/mariu/OneDrive/Dokumente/Python Scripts/ab51-40-100.mps'])           
                             
 except gp.GurobiError as e:
     print('Error code ' + str(e.errno) + ': ' + str(e))
