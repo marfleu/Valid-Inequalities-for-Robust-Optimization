@@ -15,36 +15,36 @@ from bidict import bidict
 try:
 
     # Create a new model
-    #m = gp.read('C:/Users/mariu/OneDrive/Dokumente/Python Scripts/ab71-20-100.mps')
-    m=gp.Model('mip1')
+    m = gp.read('C:/Users/mariu/OneDrive/Dokumente/Python Scripts/ab71-20-100.mps')
+    #m=gp.Model('mip1')
     # # Create variables
-    x1 = m.addVar(vtype=GRB.BINARY, name="x1")
-    x2 = m.addVar(vtype=GRB.BINARY, name="x2")
-    x3 = m.addVar(vtype=GRB.BINARY, name="x3")
-    x4 = m.addVar(vtype=GRB.BINARY, name="x4")
-    x5 = m.addVar(vtype=GRB.BINARY, name="x5")
-    x6 = m.addVar(vtype=GRB.BINARY, name="x6")
-    x7 = m.addVar(vtype=GRB.BINARY, name="x7")
-    x8 = m.addVar(vtype=GRB.BINARY, name="x8")
-    x9 = m.addVar(vtype=GRB.BINARY, name="x9")
-    x10 = m.addVar(vtype=GRB.BINARY, name="x10")
-    x11 = m.addVar(vtype=GRB.BINARY, name="x11")
-    x12 = m.addVar(vtype=GRB.BINARY, name="x12")
-    x13 = m.addVar(vtype=GRB.BINARY, name="x13")
-    x14 = m.addVar(vtype=GRB.BINARY, name="x14")
-    x15 = m.addVar(vtype=GRB.BINARY, name="x15")
+    # x1 = m.addVar(vtype=GRB.BINARY, name="x1")
+    # x2 = m.addVar(vtype=GRB.BINARY, name="x2")
+    # x3 = m.addVar(vtype=GRB.BINARY, name="x3")
+    # x4 = m.addVar(vtype=GRB.BINARY, name="x4")
+    # x5 = m.addVar(vtype=GRB.BINARY, name="x5")
+    # x6 = m.addVar(vtype=GRB.BINARY, name="x6")
+    # x7 = m.addVar(vtype=GRB.BINARY, name="x7")
+    # x8 = m.addVar(vtype=GRB.BINARY, name="x8")
+    # x9 = m.addVar(vtype=GRB.BINARY, name="x9")
+    # x10 = m.addVar(vtype=GRB.BINARY, name="x10")
+    # x11 = m.addVar(vtype=GRB.BINARY, name="x11")
+    # x12 = m.addVar(vtype=GRB.BINARY, name="x12")
+    # x13 = m.addVar(vtype=GRB.BINARY, name="x13")
+    # x14 = m.addVar(vtype=GRB.BINARY, name="x14")
+    # x15 = m.addVar(vtype=GRB.BINARY, name="x15")
     # Set objective
-    m.setObjective(-x1 - x2 - 2 * x3, GRB.MINIMIZE)
+    # m.setObjective(-x1 - x2 - 2 * x3, GRB.MINIMIZE)
 
     # # Add constraint: x + 2 y + 3 z <= 4
-    m.addConstr(x1 + x2 + x3 <= 1, "c0")
-    m.addConstr(x4 + x5 + x6 <= 1, "c1")
-    m.addConstr(x6 + x7 + x8 <= 1, "c2")
-    m.addConstr(x9 + x7 + x8 <= 1, "c3")
-    m.addConstr(x10 + 2*x11 + 2*x12+ x1 <= 2, "c4")
-    m.addConstr(x13 + x2 + x3 - x15 <= 1, "c5")
-    m.addConstr( x2 + x5 <= 1, "c6")
-    m.addConstr( x4 + x3 +x5 <= 1, "c0")
+    # m.addConstr(x1 + x2 + x3 <= 1, "c0")
+    # m.addConstr(x4 + x5 + x6 <= 1, "c1")
+    # m.addConstr(x6 + x7 + x8 <= 1, "c2")
+    # m.addConstr(x9 + x7 + x8 <= 1, "c3")
+    # m.addConstr(x10 + 2*x11 + 2*x12+ x1 <= 2, "c4")
+    # m.addConstr(x13 + x2 + x3 - x15 <= 1, "c5")
+    # m.addConstr( x2 + x5 <= 1, "c6")
+    # m.addConstr( x4 + x3 +x5 <= 1, "c0")
     #Add constraint: x + y >= 1
     #m.addConstr(4* x1 + 3 * x2 + x10 +x9 +2* x8 <= 3, "c1")
     m.update()
@@ -208,9 +208,13 @@ try:
         vartovar={}
         index=0
         numbering=bidict({})
+        m=len(g.getVars())
         #initialise map variables <--> indices
         for var in g.getVars():
             numbering[var]=index
+            vartoclique[var]=[]
+            if adjacency:
+                vartovar[index]=[0]*m
             index+=1
         for con in range(0,len(constrs)):
             adjustb=0
@@ -553,7 +557,7 @@ try:
         
     
         
-    def RobustFormulation(g, gamma, withcliques=False, cliquemethod="default" , cHat={}):
+    def RobustFormulation(g, gamma, withcliques=False, cliquemethod="default" , cHat={}, weights={}):
         #[C,l]=ConflictGraph(g)
         z=g.addVar(lb=0.0,vtype=GRB.CONTINUOUS)
         pvalues={}
@@ -574,6 +578,11 @@ try:
                 [G.Cliques,G.Equations,G.vartovar,G.vartoclique, G.numbering]=buildConflictGraph(g)
                 G.FindCliquePartitionDSatur()
                 Cliques=G.Cliques       
+            elif cliquemethod=="dsaturw":
+                G=ConflictGraph()
+                [G.Cliques,G.Equations,G.vartovar,G.vartoclique, G.numbering]=buildWeightedConflictGraph(g, weights, 0.01)
+                G.FindCliquePartitionDSatur()
+                Cliques=G.Cliques
         else:
             Cliques=Vars
         objVars={}
@@ -628,12 +637,13 @@ try:
             m = gp.read(sce)
             #objective=buildObjectiveFunction(m, 1)
             m1=m.copy()
+            m2=m.copy()
             t0=time.time()
             cHat, pvalues, z = RobustFormulation(m, 20)
             p=len(pvalues)
             t0=time.time()-t0
             t1=time.time()
-            cHat, pvalues, z = RobustFormulation(m1, 20, True, "default", cHat)
+            #cHat, pvalues, z = RobustFormulation(m1, 20, True, "default", cHat)
             p1=len(pvalues)
             t1=time.time() -t1
             g=m.relax()
@@ -642,10 +652,22 @@ try:
             g.optimize()
             t2=time.time() -t2
             t3=time.time()
-            g1.optimize()
+            #g1.optimize()
             t3=time.time() -t3
+            weights={}
+            for v in g.getVars():
+                weights[v.VarName]=v.x
+            t4=time.time()
+            cHat, pvalues, z =RobustFormulation(m2, 20, True, "dsaturw", cHat, weights)
+            p2=len(pvalues)
+            t5=time.time()-t4
+            g2=m2.relax()
+            t6=time.time()
+            g2.optimize()
+            t7=time.time() -t6
             l=[y for y in g.X if abs(y)>0.001]
             l1=[y for y in g1.X if abs(y)>0.001]
+            l2=[y for y in g2.X if abs(y)>0.001]
             print('Objective Value model 0: ',g.ObjVal)
             print('Times model 0: ',t0, t2)
             print('Number of nonzeros of model 0:', len(l))
@@ -654,11 +676,15 @@ try:
             print('Times model 1: ',t1, t3)
             print('Number of nonzeros of model 1:', len(l1))
             print('Number of p-values of model 1:', p1)
+            print('Objective Value model 2: ',g2.ObjVal)
+            print('Times model 2: ',t5, t7)
+            print('Number of nonzeros of model 2:', len(l2))
+            print('Number of p-values of model 2:', p2)
     #G=ConflictGraph()       
     #[G.Cliques,G.Equations,G.vartovar,G.vartoclique, G.numbering]=buildConflictGraph(m)
     #G.FindCliquePartitionDSatur()
     #buildConflictGraph(m) 
-    CompareRobustMethods(['C:/Users/mariu/OneDrive/Dokumente/Python Scripts/ab51-40-100.mps'])           
+#    CompareRobustMethods(['C:/Users/mariu/OneDrive/Dokumente/Python Scripts/ab51-40-100.mps'])           
                             
 except gp.GurobiError as e:
     print('Error code ' + str(e.errno) + ': ' + str(e))
