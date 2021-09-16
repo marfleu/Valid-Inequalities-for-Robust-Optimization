@@ -11,11 +11,11 @@ import random as rand
 import mappedqueue as mapq
 import time
 from bidict import bidict
+import re
 
 try:
-
     # Create a new model
-    m = gp.read('C:/Users/mariu/OneDrive/Dokumente/Python Scripts/ab71-20-100.mps')
+    #m = gp.read('C:/Users/mariu/OneDrive/Dokumente/Python Scripts/ab71-20-100.mps')
     #m=gp.Model('mip1')
     # # Create variables
     # x1 = m.addVar(vtype=GRB.BINARY, name="x1")
@@ -33,10 +33,10 @@ try:
     # x13 = m.addVar(vtype=GRB.BINARY, name="x13")
     # x14 = m.addVar(vtype=GRB.BINARY, name="x14")
     # x15 = m.addVar(vtype=GRB.BINARY, name="x15")
-    # Set objective
+    # # Set objective
     # m.setObjective(-x1 - x2 - 2 * x3, GRB.MINIMIZE)
 
-    # # Add constraint: x + 2 y + 3 z <= 4
+    # # # Add constraint: x + 2 y + 3 z <= 4
     # m.addConstr(x1 + x2 + x3 <= 1, "c0")
     # m.addConstr(x4 + x5 + x6 <= 1, "c1")
     # m.addConstr(x6 + x7 + x8 <= 1, "c2")
@@ -45,14 +45,27 @@ try:
     # m.addConstr(x13 + x2 + x3 - x15 <= 1, "c5")
     # m.addConstr( x2 + x5 <= 1, "c6")
     # m.addConstr( x4 + x3 +x5 <= 1, "c0")
-    #Add constraint: x + y >= 1
-    #m.addConstr(4* x1 + 3 * x2 + x10 +x9 +2* x8 <= 3, "c1")
-    m.update()
+    # #Add constraint: x + y >= 1
+    # #m.addConstr(4* x1 + 3 * x2 + x10 +x9 +2* x8 <= 3, "c1")
+    # m.update()
     
     # Optimize model
     #m.optimize()
                    
-            
+    def readInstance(file):  
+        # reading the data from the file
+        with open(file) as f:
+            data = f.read()
+        lis=re.findall(".*:.*", data)
+        l=[re.split(":", y) for y in lis]
+        l=[[y[0], float(y[1])] for y in l]
+        dic={}
+        for i in range(len(l)-1):
+            i+=1
+            dic[l[i][0]]=float(l[i][1])
+        gamma=l[0][1]   
+        return gamma, dic
+        
     def determineTyp(typ):
         if typ == '<=' or typ=='>=' or typ =='==':
             equality=True
@@ -67,7 +80,7 @@ try:
         expr=0
         for var in g.getVars():
             r=rand.randint(0, n)
-            expr=expr+ r*var
+            expr=expr- r*var
         g.setObjective(expr, GRB.MINIMIZE)
         g.update()
         return expr
@@ -85,10 +98,14 @@ try:
         vartoclique={}
         vartovar={}
         index=0
+        m=len(g.getVars())
         numbering=bidict({})
         #initialise map variables <--> indices
         for var in g.getVars():
-            numbering[var]=index
+            numbering[var.VarName]=index
+            vartoclique[var.VarName]=[]
+            if adjacency:
+                vartovar[index]=[0]*m
             index+=1
         for con in range(0,len(constrs)):
             adjustb=0
@@ -117,11 +134,11 @@ try:
                 coff=c.getCoeff(i)*typ   
                 #inverse the sign of the coefficient
                 if coff > 0:
-                    l[n].append([c.getVar(i),coff, 1]) 
+                    l[n].append([c.getVar(i).VarName,coff, 1]) 
                     #l[n][i] contains variable at position 0, coefficinet at 1 and 0 at 2, if we consider the complement
                 elif coff < 0:
                     adjustb+=coff
-                    l[n].append([c.getVar(i),-coff,0])
+                    l[n].append([c.getVar(i).VarName,-coff,0])
             l[n]=sorted(l[n],key=lambda x: x[1])
             #initialize links var --> clique, var --> var:
             for k in range(0,len(l[n])):
@@ -199,7 +216,7 @@ try:
             n+=1
         return [C,l,vartovar,vartoclique, numbering]
     
-    def buildWeightedConflictGraph(g, weights, cutoff, adjacency=True):
+    def buildWeightedConflictGraph(g, z, weights, cutoff, adjacency=True):
         constrs=g.getConstrs()
         n=0
         l=[]
@@ -208,9 +225,18 @@ try:
         vartovar={}
         index=0
         numbering=bidict({})
-        m=len(g.getVars())
+        Vars=[]
+        encounteredz=False
+        for y in g.getVars():
+            try:
+                if weights[y.VarName]>cutoff:
+                    Vars.append(y.VarName)
+            except:
+                continue
+        #Vars=[y for y in g.getVars() if weights[y.VarName]>cutoff]
+        m=len(Vars)
         #initialise map variables <--> indices
-        for var in g.getVars():
+        for var in Vars:
             numbering[var]=index
             vartoclique[var]=[]
             if adjacency:
@@ -243,14 +269,26 @@ try:
                 coff=c.getCoeff(i)*typ   
                 #inverse the sign of the coefficient
                 var=c.getVar(i)
-                if coff > 0 and weights[var.VarName] > cutoff:
-                    #variable with positive coefficient is only considered, if its predefined
-                    #weight exceeds a given cutoff value
-                    l[n].append([var,coff, 1]) 
-                    #l[n][i] contains variable at position 0, coefficinet at 1 and 0 at 2, if we consider the complement
-                elif coff < 0:
-                    adjustb+=coff
-                    l[n].append([var,-coff,0])
+                if var.VarName == z:
+                    # constraints which  contain z variable, shall be ignored
+                    l.pop()
+                    encounteredz=True
+                    break
+                try:
+                    if coff > 0 and weights[var.VarName] > cutoff:
+                        #variable with positive coefficient is only considered, if its predefined
+                        #weight exceeds a given cutoff value
+                        l[n].append([var.VarName,coff, 1]) 
+                        #l[n][i] contains variable at position 0, coefficinet at 1 and 0 at 2, if we consider the complement
+                    elif coff < 0 and weights[var.VarName] > cutoff:
+                        adjustb+=coff
+                        l[n].append([var.VarName,-coff,0])
+                except:
+                    continue
+            if encounteredz:
+                #goes to next constraint, if current constraint contains z-variable
+                encounteredz=False
+                continue
             l[n]=sorted(l[n],key=lambda x: x[1])
             #initialize links var --> clique, var --> var:
             for k in range(0,len(l[n])):
@@ -343,10 +381,15 @@ try:
             C=self.Cliques
             self.Cliques=[]
             l=self.Equations
+            for var in self.numbering:
+                try: 
+                    a=self.vartoclique[var]
+                except:
+                    self.Cliques.append([var])
             for var in self.vartoclique:
                 try:
                     a=self.vartobestclique[var]
-                    #it can be assumed that the maximal clique of var has already been cound
+                    #it can be assumed that the maximal clique of var has already been found
                     continue
                 except:
                     self.vartobestclique[var]=[var]
@@ -374,9 +417,12 @@ try:
                 for w in self.vartobestclique[var]:
                     #set the best clique already for the other variables
                     try:
-                        po=set(self.vartobestclique[w]) - set(self.vartobestclique[var])
+                        a=self.vartobestclique[w]
+                        po=set(self.vartobestclique[var]) - set(a)
                         if po:
-                            self.vartobestclique[w]=list(po)
+                            self.vartobestclique[var]=list(po)
+                        else:
+                            self.vartobestclique[w]=self.vartobestclique[var]        
                     except:
                         self.vartobestclique[w]=self.vartobestclique[var]
                 self.Cliques.append(self.vartobestclique[var])                                           
@@ -448,7 +494,15 @@ try:
                     #remove the current vertex from all cliques as possible vertex
                     possvertices[cli]=possvertices[cli]-set([self.numbering[mini[2]]])
                     #posscliques.pop(mini[2])
-                n=set([v for v in range(len(self.vartovar[self.numbering[mini[2]]])) if self.vartovar[self.numbering[mini[2]]][v]==1])
+                n=[]
+                for v in range(len(self.vartovar[self.numbering[mini[2]]])):
+                    #print(v)
+                    #print(self.vartovar[self.numbering[mini[2]]][v])
+                    if self.vartovar[self.numbering[mini[2]]][v] == 1:
+                        n.append(v)
+                
+                n=set(n)
+                #n=set([v for v in range(len(self.vartovar[self.numbering[mini[2]]])) if self.vartovar[self.numbering[mini[2]]][v] == 1])
                 #remove all possible vertices for the best clique, which are not neighbours of mini
                 rest=possvertices[mi]-n 
                 possvertices[mi]=possvertices[mi] & n
@@ -462,8 +516,9 @@ try:
                     #this may be slower than O(n) in the worst case, but sets are easier to handle and more space
                     #efficient than an indicator function
                     posscliques[v]=list(set(posscliques[v])-set([mi]))
-                self.vartobestclique[self.numbering[mini[2]]]=mi
+                self.vartobestclique[mini[2]]=mi
                 self.Cliques[mi].append(mini[2])
+            
         def FindCliquePartitionDSaturWeighted(self):
             self.Cliques=[]
             coloredneigh=[]
@@ -557,43 +612,49 @@ try:
         
     
         
-    def RobustFormulation(g, gamma, withcliques=False, cliquemethod="default" , cHat={}, weights={}):
+    def RobustFormulation(g, gamma, withcliques=False, cliquemethod="none" , cHat={}, weights={}):
         #[C,l]=ConflictGraph(g)
-        z=g.addVar(lb=0.0,vtype=GRB.CONTINUOUS)
+        originvars=g.getVars()
         pvalues={}
         robEq={}
-        #originvar=g.getVars()
         objective=g.getObjective()
         objective=g.ModelSense*objective    
-        Vars=g.getVars()
+        #Vars=g.getVars()
         Cliques=[]
-        if withcliques:
-            if cliquemethod=="default":
-                G=ConflictGraph()
-                [G.Cliques,G.Equations,G.vartovar,G.vartoclique, G.numbering]=buildConflictGraph(g, False)
-                G.FindCliquePartitionDefault()
-                Cliques=G.Cliques
-            elif cliquemethod=="dsatur":
-                G=ConflictGraph()
-                [G.Cliques,G.Equations,G.vartovar,G.vartoclique, G.numbering]=buildConflictGraph(g)
-                G.FindCliquePartitionDSatur()
-                Cliques=G.Cliques       
-            elif cliquemethod=="dsaturw":
-                G=ConflictGraph()
-                [G.Cliques,G.Equations,G.vartovar,G.vartoclique, G.numbering]=buildWeightedConflictGraph(g, weights, 0.01)
-                G.FindCliquePartitionDSatur()
-                Cliques=G.Cliques
-        else:
-            Cliques=Vars
+        if cliquemethod=="none":
+            Cliques=[[v.VarName] for v in originvars]
+        elif cliquemethod=="default":
+            G=ConflictGraph()
+            [G.Cliques,G.Equations,G.vartovar,G.vartoclique, G.numbering]=buildConflictGraph(g, False)
+            G.FindCliquePartitionDefault()
+            Cliques=G.Cliques
+        elif cliquemethod=="dsatur":
+            G=ConflictGraph()
+            [G.Cliques,G.Equations,G.vartovar,G.vartoclique, G.numbering]=buildConflictGraph(g)
+            G.FindCliquePartitionDSatur()
+            Cliques=G.Cliques       
+        elif cliquemethod=="dsaturw":
+            G=ConflictGraph()
+            [G.Cliques,G.Equations,G.vartovar,G.vartoclique, G.numbering]=buildWeightedConflictGraph(g, 'z', weights, 0.01)
+            G.FindCliquePartitionDSatur()
+            Cliques=G.Cliques
+            #weigthed Conflict Graphs only compute the CG on variables of relevant weight, so G.Cliques is not an actual 
+            #Clique partition
+            for var in originvars:
+                try:
+                    a=G.vartobestclique[var.VarName]
+                except:
+                    Cliques.append([var.VarName])
+                
         objVars={}
         i=0
         while True:
             try:
-                objVars[objective.getVar(i)]=objective.getCoeff(i)
+                objVars[objective.getVar(i).VarName]=objective.getCoeff(i)
                 i+=1
             except:
                 break
-        for var in Vars:
+        for var in originvars:
             try:
                 if cHat[var.VarName] >= 0:
                     pass
@@ -602,7 +663,7 @@ try:
                     #r=rand.random()  ###keep this random option for now
                     r=rand.choice([0.2,0.4,0.6,0.8])
                     if abs(objVars[var]) > 0:
-                        cHat[var.VarName]=abs(r*objVars[var])
+                        cHat[var]=abs(r*objVars[var.VarName])
                     else:
                         cHat[var.VarName]=abs(r)
                         
@@ -612,38 +673,109 @@ try:
             # expr2=cHat[var.VarName]*var
             # robEq[var]=g.addConstr(expr1 >= expr2)
             # g.update()
+        z=g.addVar(lb=0.0,vtype=GRB.CONTINUOUS)
+        g.update()
         for cli in Cliques:
             if withcliques:
                 pvalues[cli[0]]=g.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
                 expr1=pvalues[cli[0]]+z
                 expr2=0
                 for v in cli:
-                    expr2=expr2+cHat[v.VarName]*v
+                    expr2=expr2+cHat[v]*g.getVarByName(v)
             else:
-                pvalues[cli]=g.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
-                expr1=pvalues[cli]+z
+                for v in cli:
+                    pvalues[v]=g.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
+                expr1=sum(pvalues[v] for v in cli) +z
                 expr2=0
-                expr2=cHat[cli.varName]*cli
+                expr2=sum(cHat[v]*g.getVarByName(v) for v in cli)
             g.addConstr(expr1 >= expr2)
             g.update()
         expr=sum(pvalues.values())
         objective=g.setObjective(objective+gamma*z+expr, GRB.MINIMIZE)
         g.update()
         return cHat, pvalues, z
-        #Now set the 
+    
+    def ExtendedRobustFormulation(g, z, pvalues, cHat, weights):
+        """
+        Extends a given Robust Formulation by Clique Inequalities with Cliques 
+        from a weighted Conflict Graph, possibly with weights given by objective values of a 
+        previous solution of  g.
+        Parameters
+        ----------
+        g : Gurobi model of a Robust Formulation
+        z : Gurobi variable 'z' from Robust Formulation
+        pvalues : dictionnary of Gurobi variables of all 'p'-variables from Robust Formulation
+        cHat : dictionary of worst case deviations for Robust Formulation (Gurobi.var.name --> value)
+        weights : dictionary of weights to compute a weighted Conflict Graph (Gurobi.var.name --> value) 
+
+        Extends a given Robust Formulation g by Clique Inequalities with Cliques 
+        from a weighted Conflict Graph, possibly with weights given by objective values of a 
+        previous solution of  g.
+
+        """
+        G=ConflictGraph()
+        [G.Cliques,G.Equations,G.vartovar,G.vartoclique, G.numbering]=buildWeightedConflictGraph(g, z, weights, 0.01)
+        G.FindCliquePartitionDSatur()
+        Cliques=G.Cliques
+        for cli in Cliques:
+            #print("hier cli ", cli)
+            expr1=sum(g.getVarByName(pvalues[v].VarName) for v in cli) +g.getVarByName(z.VarName)
+            expr2=0
+            for i in range(len(cli)):
+                #print(cHat[cli[i]])
+                #print(g.getVarByName(cli[i]))
+                expr2+=cHat[cli[i]]*g.getVarByName(cli[i])
+            #expr2=sum(cHat[v]*g.getVarByName(v) for v in cli)
+            g.addConstr(expr1 >= expr2)
+            g.update()
+        
+    
+    def extendMultipleTimes(g, gamma, z, pvalues, n, cHat={}):
+        """
+        
+
+        Parameters
+        ----------
+        g : gurobipy instance of non-robust model, non-relaxed, non-optimized
+        gamma: 'gamma'-value from Robust Formulation 
+        z : Gurobi variable 'z' from Robust Formulation
+        pvalues : dictionary of Gurobi variables of all 'p'-variables from Robust Formulation
+        cHat: dictionary of worst case deviations for Robust Formulation (Gurobi.var.name --> value) 
+        n : number of extensions to be applied to the model
+
+        Returns
+        -------
+        None.
+
+        """
+        originvarnames=[y.VarName for y in g.getVars]
+        m=g.copy()
+        #build a standard robust formulation, without cliques or anything
+        cHat, z, pvalues = RobustFormulation(g, gamma, False, "none",  cHat)
+        g.relax()
+        g.optimize()
+        for i in range(n-1):
+            weights={}
+            for v in originvarnames:
+                # get all objective values of the original formulation and form the dictionary weights
+                weights[v]=(g.getVarByName(v)).x
+            ExtendedRobustFormulation(g, z, pvalues, cHat, weights)
+            
+            
     
     def CompareRobustMethods(scenarios):
         for sce in scenarios:
+            gamma, cHat = readInstance('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/RobustnessComponents/air03_g=10_d=45-55_r=0.txt')
             m = gp.read(sce)
             #objective=buildObjectiveFunction(m, 1)
             m1=m.copy()
             m2=m.copy()
             t0=time.time()
-            cHat, pvalues, z = RobustFormulation(m, 20)
+            cHat, pvalues, z = RobustFormulation(m, gamma, True, "none", cHat)
             p=len(pvalues)
             t0=time.time()-t0
             t1=time.time()
-            #cHat, pvalues, z = RobustFormulation(m1, 20, True, "default", cHat)
+            cHat, pvalues, z = RobustFormulation(m1, gamma, True, "default", cHat)
             p1=len(pvalues)
             t1=time.time() -t1
             g=m.relax()
@@ -652,13 +784,13 @@ try:
             g.optimize()
             t2=time.time() -t2
             t3=time.time()
-            #g1.optimize()
+            g1.optimize()
             t3=time.time() -t3
             weights={}
             for v in g.getVars():
                 weights[v.VarName]=v.x
             t4=time.time()
-            cHat, pvalues, z =RobustFormulation(m2, 20, True, "dsaturw", cHat, weights)
+            cHat, pvalues, z =RobustFormulation(m2, gamma, True, "dsaturw", cHat, weights)
             p2=len(pvalues)
             t5=time.time()-t4
             g2=m2.relax()
@@ -673,10 +805,12 @@ try:
             print('Number of nonzeros of model 0:', len(l))
             print('Number of p-values of model 0:', p)
             print('Objective Value model 1: ',g1.ObjVal)
+            print('Relative error model 1: ', abs(g1.ObjVal - g.ObjVal)/abs(g.ObjVal))
             print('Times model 1: ',t1, t3)
             print('Number of nonzeros of model 1:', len(l1))
             print('Number of p-values of model 1:', p1)
             print('Objective Value model 2: ',g2.ObjVal)
+            print('Relative error model 2: ', abs(g2.ObjVal - g.ObjVal)/abs(g.ObjVal))
             print('Times model 2: ',t5, t7)
             print('Number of nonzeros of model 2:', len(l2))
             print('Number of p-values of model 2:', p2)
@@ -684,8 +818,38 @@ try:
     #[G.Cliques,G.Equations,G.vartovar,G.vartoclique, G.numbering]=buildConflictGraph(m)
     #G.FindCliquePartitionDSatur()
     #buildConflictGraph(m) 
-#    CompareRobustMethods(['C:/Users/mariu/OneDrive/Dokumente/Python Scripts/ab51-40-100.mps'])           
-                            
+    #CompareRobustMethods(['C:/Users/mariu/OneDrive/Dokumente/Python Scripts/30_70_45_05_100.mps'])           
+    #m = gp.read('C:/Users/mariu/OneDrive/Dokumente/Python Scripts/30_70_45_05_100.mps')
+   #  # #buildObjectiveFunction(m, 3)
+    #gamma, cHat = readInstance('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/RobustnessComponents/30_70_45_05_100_g=10_d=45-55_r=0.txt')
+    #m1=m.copy()
+   #  # m2=m.copy()
+   #  # gamma=10
+    # cHat, pvalues, z = RobustFormulation(m, 5) 
+    # g=m.copy()
+    # g=g.relax()
+    # g.optimize()
+    # print(len(g.getConstrs()))
+    # weights={}
+    # for v in m1.getVars():
+    #     weights[v.VarName]=(g.getVarByName(v.VarName)).x
+    # print("Extend\n")
+    # ExtendedRobustFormulation(g, z, pvalues, cHat, weights)
+    # g.optimize()
+    # print(len(g.getConstrs()))
+   #  # cHat, pvalues, z =RobustFormulation(m2, gamma, False, "default", cHat)
+   #  # cHat, pvalues, z =RobustFormulation(m1, gamma, True, "dsaturw", cHat, weights)
+   #  # g1=m1.copy()
+   #  # g2=m2.copy()
+   #  # g1=g1.relax()
+   #  # g2=g2.relax()
+   #  # g1.optimize()
+   #  # g2.optimize()
+   #  # print('Objective Value model 0: ',g.ObjVal)
+   #  # print('Objective Value model 1: ',g1.ObjVal)
+   #  # print('Objective Value model 2: ',g2.ObjVal)
+    
+                          
 except gp.GurobiError as e:
     print('Error code ' + str(e.errno) + ': ' + str(e))
 
