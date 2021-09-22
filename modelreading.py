@@ -191,6 +191,8 @@ try:
                 down=s
                 t = int((up+down)/2)
                 if (equality and l[n][up][1]+l[n][j][1] <= b) or (not equality and l[n][up][1]+l[n][j][1] < b):
+                    #variable j does not occur in any clique of this inequality
+                    vartoclique[l[n][j][0]].pop()
                     continue
                 while not (up==down):
                     if (not equality and l[n][t][1]+l[n][j][1] >= b) or (equality and l[n][t][1]+l[n][j][1] > b):
@@ -341,6 +343,8 @@ try:
                 down=s
                 t = int((up+down)/2)
                 if (equality and l[n][up][1]+l[n][j][1] <= b) or (not equality and l[n][up][1]+l[n][j][1] < b):
+                    #variable j does not occur in any clique of this inequality
+                    vartoclique[l[n][j][0]].pop()
                     continue
                 while not (up==down):
                     if (not equality and l[n][t][1]+l[n][j][1] >= b) or (equality and l[n][t][1]+l[n][j][1] > b):
@@ -377,6 +381,122 @@ try:
             self.vardegree={}
             self.vartovalue={}
             self.numbering=bidict({})
+        def FindCliqueCover(self):
+            C=self.Cliques
+            self.Cliques=[]
+            l=self.Equations
+            for var in self.numbering:
+                try: 
+                    a=self.vartoclique[var]
+                except:
+                    self.Cliques.append([var])
+            for var in self.vartoclique:
+                try:
+                    a=self.vartobestclique[var]
+                    #it can be assumed that the maximal clique of var has already been found
+                    continue
+                except:
+                    self.vartobestclique[var]=[var]
+                    if len(self.vartoclique[var])>0:
+                        for tup in self.vartoclique[var]:
+                            k=tup[1]
+                            n=tup[0]
+                            if C[n]==[]:    
+                                #in C[n] is no maximal clique for the row available; for example x1+x2+x3<=2
+                                continue
+                            else:
+                                for clis in C[n]:
+                                    cliqueindex=clis[1]
+                                    if k >= cliqueindex:
+                                        #k>=cliqueindex says var is in biggest clique
+                                        length=len(l[n])
+                                        clique=[]
+                                        for i in range(cliqueindex, length):
+                                            if l[n][i][2]==1:
+                                                #append non-negated variable to clique only 
+                                                clique.append(l[n][i][0])
+                                        clique=list(set(clique))        
+                                        if len(clique)> len(self.vartobestclique[var]):
+                                            self.vartobestclique[var]=clique
+                                    elif k==clis[0]:
+                                        clique=[]
+                                        clique.append(l[n][k][0])
+                                        length=len(l[n])
+                                        for i in range(cliqueindex, length):
+                                            if l[n][i][2]==1:
+                                                clique.append(l[n][i][0])
+                                        clique=list(set(clique)) 
+                                        if len(clique)> len(self.vartobestclique[var]):
+                                            self.vartobestclique[var]=clique
+                #trying to find the maximal clique containing the current clique.
+                #difficulties: often there is only a relation var1 --> var2 known, but not var2 --> var1
+                #and the adjacency relation is only revealed piece by piece.
+                #so naturally the maximal clique computation is often incomplete.
+                #example: x1 + x2+  2x3 + 2x4 <= 2; x2, x3, x4 form the biggest clique,
+                #but x3, x4 do not know their neighbour x1. Only x1 knows them.  
+                elems=[(v, len(self.vartoclique[v])) for v in self.vartobestclique[var]]
+                elems=sorted(elems, key=lambda x: x[1])
+                neighbours=set()
+                cli=set(self.vartobestclique[var])
+                #determine all neighbours of clique members as far as possible
+                for w in elems:
+                    if neighbours==cli:
+                        break
+                    try:
+                        if type(self.vartovar[w[0]])==list:
+                            pass
+                    except:
+                        self.vartovar[w[0]]=[]
+                    for tup in self.vartoclique[w[0]]:
+                        k=tup[1]
+                        n=tup[0]    
+                        if C[n]==[]:    
+                                #in C[n] is no maximal clique for the row available; for example if corresp. ineq. is x1+x2+x3<=2
+                                continue
+                        else:
+                            for clis in C[n]:
+                                cliqueindex=clis[1]
+                                if k >= cliqueindex and cliqueindex == clis[0]:
+                                    # k>=cliqueinde and (clis[1]=)cliqueindex==clis[0 says var
+                                    # is in biggest clique (cliqueindex, cliqueindex)
+                                    length=len(l[n])
+                                    for i in range(cliqueindex, length):
+                                        if l[n][i][2]==1:
+                                            #determine all neighbours of w[0] (including w[0] itself)
+                                            self.vartovar[w[0]].append(l[n][i][0])
+                                elif k==clis[0]:
+                                    self.vartovar[w[0]].append(l[n][k][0])
+                                    length=len(l[n])
+                                    for i in range(cliqueindex, length):
+                                        if l[n][i][2]==1:
+                                            #add new neighbours to w[0] and vice versa 
+                                            self.vartovar[w[0]].append(l[n][i][0])
+                                            try:
+                                                self.vartovar[l[n][i][0]].append(w[0])
+                                            except:
+                                                self.vartovar[l[n][i][0]] = [w[0]]
+                                elif k >= cliqueindex and not cliqueindex==clis[0]:
+                                    if l[n][clis[0]][2]==1:
+                                            #add new neighbours to w[0] and vice versa 
+                                            try:
+                                                self.vartovar[w[0]].append(l[n][clis[0]][0])
+                                            except:
+                                                self.vartovar[w[0]]=[l[n][clis[0]][0]]
+                    if neighbours==set():
+                        neighbours=set(self.vartovar[w[0]])
+                    else:
+                        neighbours=neighbours & set(self.vartovar[w[0]])
+                                    
+                #compute all intersections between neighbours
+                # for w in elems:
+                #     if neighbours==cli:
+                #         break
+                self.vartobestclique[var]=list(neighbours)
+                for w in elems:
+                    self.vartobestclique[w[0]]=self.vartobestclique[var]
+                if self.vartobestclique[var]==[]:
+                    self.vartobestclique[var]=[var]
+                self.Cliques.append(self.vartobestclique[var])
         def FindCliquePartitionDefault(self):
             C=self.Cliques
             self.Cliques=[]
@@ -632,7 +752,12 @@ try:
             G=ConflictGraph()
             [G.Cliques,G.Equations,G.vartovar,G.vartoclique, G.numbering]=buildConflictGraph(g)
             G.FindCliquePartitionDSatur()
-            Cliques=G.Cliques       
+            Cliques=G.Cliques
+        elif cliquemethod=="cover":
+            G=ConflictGraph()
+            [G.Cliques,G.Equations,G.vartovar,G.vartoclique, G.numbering]=buildConflictGraph(g, False)
+            G.FindCliqueCover()
+            Cliques=G.Cliques            
         elif cliquemethod=="dsaturw":
             G=ConflictGraph()
             [G.Cliques,G.Equations,G.vartovar,G.vartoclique, G.numbering]=buildWeightedConflictGraph(g, 'z', weights, 0.01)
@@ -689,7 +814,7 @@ try:
                 expr2=0
                 expr2=sum(cHat[v]*g.getVarByName(v) for v in cli)
             g.addConstr(expr1 >= expr2)
-            g.update()
+            #g.update()
         expr=sum(pvalues.values())
         objective=g.setObjective(objective+gamma*z+expr, GRB.MINIMIZE)
         g.update()
@@ -714,7 +839,7 @@ try:
 
         """
         G=ConflictGraph()
-        [G.Cliques,G.Equations,G.vartovar,G.vartoclique, G.numbering]=buildWeightedConflictGraph(g, z, weights, 0.01)
+        [G.Cliques,G.Equations,G.vartovar,G.vartoclique, G.numbering]=buildWeightedConflictGraph(g, z.VarName, weights, 0.01)
         G.FindCliquePartitionDSatur()
         Cliques=G.Cliques
         for cli in Cliques:
@@ -727,7 +852,7 @@ try:
                 expr2+=cHat[cli[i]]*g.getVarByName(cli[i])
             #expr2=sum(cHat[v]*g.getVarByName(v) for v in cli)
             g.addConstr(expr1 >= expr2)
-            g.update()
+        g.update()
         
     
     def extendMultipleTimes(g, gamma, z, pvalues, n, cHat={}):
@@ -761,94 +886,10 @@ try:
                 weights[v]=(g.getVarByName(v)).x
             ExtendedRobustFormulation(g, z, pvalues, cHat, weights)
             
-            
-    
-    def CompareRobustMethods(scenarios):
-        for sce in scenarios:
-            gamma, cHat = readInstance('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/RobustnessComponents/air03_g=10_d=45-55_r=0.txt')
-            m = gp.read(sce)
-            #objective=buildObjectiveFunction(m, 1)
-            m1=m.copy()
-            m2=m.copy()
-            t0=time.time()
-            cHat, pvalues, z = RobustFormulation(m, gamma, True, "none", cHat)
-            p=len(pvalues)
-            t0=time.time()-t0
-            t1=time.time()
-            cHat, pvalues, z = RobustFormulation(m1, gamma, True, "default", cHat)
-            p1=len(pvalues)
-            t1=time.time() -t1
-            g=m.relax()
-            g1=m1.relax()
-            t2=time.time()
-            g.optimize()
-            t2=time.time() -t2
-            t3=time.time()
-            g1.optimize()
-            t3=time.time() -t3
-            weights={}
-            for v in g.getVars():
-                weights[v.VarName]=v.x
-            t4=time.time()
-            cHat, pvalues, z =RobustFormulation(m2, gamma, True, "dsaturw", cHat, weights)
-            p2=len(pvalues)
-            t5=time.time()-t4
-            g2=m2.relax()
-            t6=time.time()
-            g2.optimize()
-            t7=time.time() -t6
-            l=[y for y in g.X if abs(y)>0.001]
-            l1=[y for y in g1.X if abs(y)>0.001]
-            l2=[y for y in g2.X if abs(y)>0.001]
-            print('Objective Value model 0: ',g.ObjVal)
-            print('Times model 0: ',t0, t2)
-            print('Number of nonzeros of model 0:', len(l))
-            print('Number of p-values of model 0:', p)
-            print('Objective Value model 1: ',g1.ObjVal)
-            print('Relative error model 1: ', abs(g1.ObjVal - g.ObjVal)/abs(g.ObjVal))
-            print('Times model 1: ',t1, t3)
-            print('Number of nonzeros of model 1:', len(l1))
-            print('Number of p-values of model 1:', p1)
-            print('Objective Value model 2: ',g2.ObjVal)
-            print('Relative error model 2: ', abs(g2.ObjVal - g.ObjVal)/abs(g.ObjVal))
-            print('Times model 2: ',t5, t7)
-            print('Number of nonzeros of model 2:', len(l2))
-            print('Number of p-values of model 2:', p2)
-    #G=ConflictGraph()       
-    #[G.Cliques,G.Equations,G.vartovar,G.vartoclique, G.numbering]=buildConflictGraph(m)
-    #G.FindCliquePartitionDSatur()
-    #buildConflictGraph(m) 
-    #CompareRobustMethods(['C:/Users/mariu/OneDrive/Dokumente/Python Scripts/30_70_45_05_100.mps'])           
-    #m = gp.read('C:/Users/mariu/OneDrive/Dokumente/Python Scripts/30_70_45_05_100.mps')
-   #  # #buildObjectiveFunction(m, 3)
-    #gamma, cHat = readInstance('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/RobustnessComponents/30_70_45_05_100_g=10_d=45-55_r=0.txt')
-    #m1=m.copy()
-   #  # m2=m.copy()
-   #  # gamma=10
-    # cHat, pvalues, z = RobustFormulation(m, 5) 
-    # g=m.copy()
-    # g=g.relax()
-    # g.optimize()
-    # print(len(g.getConstrs()))
-    # weights={}
-    # for v in m1.getVars():
-    #     weights[v.VarName]=(g.getVarByName(v.VarName)).x
-    # print("Extend\n")
-    # ExtendedRobustFormulation(g, z, pvalues, cHat, weights)
-    # g.optimize()
-    # print(len(g.getConstrs()))
-   #  # cHat, pvalues, z =RobustFormulation(m2, gamma, False, "default", cHat)
-   #  # cHat, pvalues, z =RobustFormulation(m1, gamma, True, "dsaturw", cHat, weights)
-   #  # g1=m1.copy()
-   #  # g2=m2.copy()
-   #  # g1=g1.relax()
-   #  # g2=g2.relax()
-   #  # g1.optimize()
-   #  # g2.optimize()
-   #  # print('Objective Value model 0: ',g.ObjVal)
-   #  # print('Objective Value model 1: ',g1.ObjVal)
-   #  # print('Objective Value model 2: ',g2.ObjVal)
-    
+    gamma, cHat = readInstance('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/RobustnessComponents/air03_g=40_d=45-55_r=0.txt')
+    m4 = gp.read('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/air03.mps')
+    #originvars=[y.VarName for y in m.getVars()]        
+    cHat, pvalues, z =RobustFormulation(m4, gamma, True, "cover", cHat)
                           
 except gp.GurobiError as e:
     print('Error code ' + str(e.errno) + ': ' + str(e))
