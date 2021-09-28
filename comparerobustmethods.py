@@ -21,6 +21,7 @@ def CompareRobustMethods(file, file2):
     m1=m.copy()
     m2=m.copy()
     m3=m.copy()
+    m4=m.copy()
     t0=time.time()
     cHat, pvalues, z = mr.RobustFormulation(m, gamma, True, "none", cHat)
     p=len(pvalues)
@@ -56,10 +57,19 @@ def CompareRobustMethods(file, file2):
     t5=time.time()
     g2.optimize()
     t5=time.time() -t5
+    t8=time.time()
+    cHat, pvalues, z = mr.RobustFormulation(m4, gamma, False, "cover", cHat)
+    p4=len(pvalues)
+    t8=time.time() -t8
+    g4=m4.relax()
+    t9=time.time()
+    g4.optimize()
+    t9=time.time()-t9
     l=[g.getVarByName(v).x for v in originvars if abs(g.getVarByName(v).x)>0.001]
     l1=[g1.getVarByName(v).x for v in originvars if abs(g1.getVarByName(v).x)>0.001]
     l2=[g2.getVarByName(v).x for v in originvars if abs(g2.getVarByName(v).x)>0.001]
     l3=[g3.getVarByName(v).x for v in originvars if abs(g3.getVarByName(v).x)>0.001]
+    l4=[g3.getVarByName(v).x for v in originvars if abs(g4.getVarByName(v).x)>0.001]
     data={}
     data['gamma']=gamma
     data['original']={}
@@ -86,8 +96,16 @@ def CompareRobustMethods(file, file2):
     data['dsatweight']['Computation Time']=t5
     data['dsatweight']['p-Values']=p2
     data['dsatweight']['nonzeroes']=len(l2)
+    data['cover']={}
+    data['cover']['Objective value']=g4.ObjVal
+    data['cover']['Building Time']=t8
+    data['cover']['Computation Time']=t9
+    data['cover']['p-Values']=p4
+    data['cover']['nonzeroes']=len(l4)
     print(data)
-    pattern=re.search('\\[^\\]+[^\.]+', file2)
+    print(len(originvars))
+    print(file2)
+    pattern=re.search('\/[^\/]+[^\.]+', file2)
     print(pattern)
     pattern=pattern.group(0) + '_json.json'
     print("\n\n\n\n", pattern, "\n\n\n\n")
@@ -119,36 +137,28 @@ i=0
 j=0
 for file in os.listdir('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen'):
     pattern=re.search('[^\.]+', file)
-    i+=1
-    if i >=5:
-        break
+    # i+=1
+    # if i >=5:
+    #     break
+    #print(type(pattern.group(0)))
     for file2 in os.listdir('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/RobustnessComponents'):
-        if j >=5:
-            j=0
-            break
-        if fnmatch.fnmatch(str(file2), str(pattern.group(0) + '*')):
+        # if j >=5:
+        #     j=0
+        #     break
+        #print(type(file2))
+        if fnmatch.fnmatch(file2, pattern.group(0) + '*'):
             try:
                 j+=1
                 CompareRobustMethods('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/'+file, 'C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/RobustnessComponents/' + file2)
-                print('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen'+file)
-                break
+                print(file, file2)
+                #print('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen'+file)
+                continue
             except:
                 continue
-        # for i in range(len(file)):
-        #     #print(file[i])
-        #     #print(file2[i])
-        #     if file[1]=='a':
-        #         print(file)
-        #         break
-        # else:
-            # print(file)
-            # print(file2)
+
         
- #G=ConflictGraph()       
- #[G.Cliques,G.Equations,G.vartovar,G.vartoclique, G.numbering]=buildConflictGraph(m)
- #G.FindCliquePartitionDSatur()
- #buildConflictGraph(m) 
-#CompareRobustMethods(['C:/Users/mariu/OneDrive/Dokumente/Python Scripts/ab71-20-100.mps'])           
+ 
+#CompareRobustMethods('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/co-100.mps', 'C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/RobustnessComponents/co-100_g=100_d=45-55_r=0.txt')           
  #m = gp.read('C:/Users/mariu/OneDrive/Dokumente/Python Scripts/30_70_45_05_100.mps')
 #  # #buildObjectiveFunction(m, 3)
  #gamma, cHat = readInstance('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/RobustnessComponents/30_70_45_05_100_g=10_d=45-55_r=0.txt')

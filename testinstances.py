@@ -62,7 +62,7 @@ for v in m.getVars():
 cHat, pvalues, z =mr.RobustFormulation(m2, gamma, False, "default", cHat)
 cHat, pvalues, z =mr.RobustFormulation(m3, gamma, True, "default", cHat)
 cHat, pvalues, z =mr.RobustFormulation(m1, gamma, True, "dsatur", cHat)
-cHat, pvalues, z =mr.RobustFormulation(m4, gamma, True, "cover", cHat)
+cHat, pvalues, z =mr.RobustFormulation(m4, gamma, False, "cover", cHat)
 g=m.relax()
 g1=m1.relax()
 g2=m2.relax()

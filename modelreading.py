@@ -219,6 +219,45 @@ try:
         return [C,l,vartovar,vartoclique, numbering]
     
     def buildWeightedConflictGraph(g, z, weights, cutoff, adjacency=True):
+        """
+        Builds a Conflict Graph on variables with weights above a certain 
+        cutoff value. By default also creates the adjacency matrix of this 
+        graph.
+
+        Parameters
+        ----------
+        g : Gurobipy combinatorial (possibly robust formulation) ILP 
+        z : name of the z variable in the robust model (if existant)
+        weights : dictionnary from combinatorial variables of g --> weight 
+        cutoff : value which defines the cutoff for the variable weights
+        adjacency : TYPE, optional
+            DESCRIPTION. The default is True.
+
+        Returns
+        -------
+        list of
+            several interesting datastructures for a Conflict Graph:
+                C --> list, with entries for every inequality from g;
+                      every entry is again a list of cliques in the 
+                      Conflict Graph extracted from the inequality, either 
+                      as a tuple (i, i), coressponding to a clique of
+                      variables x_i, x_{i+1}, ..., x_n, variables being 
+                      numbered in increasing order defined by their coefficients
+                      in the inequality, or a tuple (j, i) with j < i, corresponding
+                      to a clique of x_j, x_i, x_{i+1}, ..., x_n;
+                l --> list, with entries for every inequality from g;
+                      every entry is a tuple of three;
+                      tuple entry 0 --> variable name
+                      tuple entry 1 --> coefficient of this variable in adjusted inequality
+                      tuple entry 2 --> 0: if variable appears negated in adjusted ineq.
+                                        1: if variable appears unnegated in adjusted ineq.
+                vartoclique --> dictionary: variable --> list of tuples with two entries each
+                                                         first of which points to an inequality n
+                                                         second pointing to the index in the ordering
+                                                         by coefficients of the variable in this ineq.
+                      
+
+        """
         constrs=g.getConstrs()
         n=0
         l=[]
@@ -401,7 +440,7 @@ try:
                         for tup in self.vartoclique[var]:
                             k=tup[1]
                             n=tup[0]
-                            if C[n]==[]:    
+                            if C[n]==[] or l[n][k][2]==0:    
                                 #in C[n] is no maximal clique for the row available; for example x1+x2+x3<=2
                                 continue
                             else:
@@ -438,19 +477,26 @@ try:
                 elems=sorted(elems, key=lambda x: x[1])
                 neighbours=set()
                 cli=set(self.vartobestclique[var])
+                #print("leng: ", len(self.vartobestclique[var]))
                 #determine all neighbours of clique members as far as possible
                 for w in elems:
-                    if neighbours==cli:
+                    #print("neigh: ", len(neighbours))
+                    #print("cli: ", len(cli))
+                    if abs(len(neighbours)-len(cli))/len(cli) < 0.005:
+                        #interrupt search for maximal clique if said clique
+                        #can at most be 0.5% larger, than current clique
+                        neighbours = cli
                         break
                     try:
                         if type(self.vartovar[w[0]])==list:
                             pass
                     except:
                         self.vartovar[w[0]]=[]
+                    t=time.time()
                     for tup in self.vartoclique[w[0]]:
                         k=tup[1]
                         n=tup[0]    
-                        if C[n]==[]:    
+                        if C[n]==[] or l[n][k][2]==0:    
                                 #in C[n] is no maximal clique for the row available; for example if corresp. ineq. is x1+x2+x3<=2
                                 continue
                         else:
@@ -482,11 +528,16 @@ try:
                                                 self.vartovar[w[0]].append(l[n][clis[0]][0])
                                             except:
                                                 self.vartovar[w[0]]=[l[n][clis[0]][0]]
+                    t=time.time()-t
+                    #print("a", t)
+                    t=time.time()
                     if neighbours==set():
                         neighbours=set(self.vartovar[w[0]])
                     else:
                         neighbours=neighbours & set(self.vartovar[w[0]])
-                                    
+                    t=time.time() -t
+                    #print("b", t)
+                    
                 #compute all intersections between neighbours
                 # for w in elems:
                 #     if neighbours==cli:
@@ -502,14 +553,18 @@ try:
             self.Cliques=[]
             l=self.Equations
             for var in self.numbering:
+                #if the variable does not show up in any inequality
+                #there will not be any entry var-->clique.
+                #this is caught in exception
                 try: 
                     a=self.vartoclique[var]
                 except:
                     self.Cliques.append([var])
             for var in self.vartoclique:
+                t=time.time()
                 try:
                     a=self.vartobestclique[var]
-                    #it can be assumed that the maximal clique of var has already been found
+                    #maximal clique of var has already been found
                     continue
                 except:
                     self.vartobestclique[var]=[var]
@@ -517,12 +572,13 @@ try:
                         for tup in self.vartoclique[var]:
                             k=tup[1]
                             n=tup[0]
-                            if C[n]==[]:    
-                                #in C[n] is no maximal clique for the row available; for example x1+x2+x3<=2
+                            if C[n]==[] or l[n][k][2]==0:    
+                                #in C[n] is no maximal clique for the row available; for example x1+x2+x3<=2;
+                                #or the variable appears only negated, i.e. x1 + (1-x2) <= 1
                                 continue
                             else:
                                 cliqueindex=C[n][0][0]
-                                #C[n][0][0] is the first and biggest clique from the largest coefficients;
+                                #C[n][0] is the first and biggest clique extracted from an inequality;
                                 #for example {x2, x3} from x1+2x2+2x3<=3
                                 if k >= cliqueindex:
                                     #k>=cliqueindex says var is in biggest clique
@@ -530,22 +586,39 @@ try:
                                     clique=[]
                                     for i in range(cliqueindex, length):
                                         if l[n][i][2]==1:
-                                            #append variable to clique only 
-                                            clique.append(l[n][i][0])
-                                            if len(clique)> len(self.vartobestclique[var]):
-                                                self.vartobestclique[var]=clique
-                for w in self.vartobestclique[var]:
-                    #set the best clique already for the other variables
+                                            try: 
+                                                #if the best clique has already been found
+                                                #the variable will not be added to the clique
+                                                a=self.vartobestclique[l[n][i][0]]
+                                                if l[n][i][0] == var:
+                                                    clique.append(l[n][i][0])  
+                                            except:
+                                                #append variable to clique only 
+                                                clique.append(l[n][i][0])
+                                    if len(clique)> len(self.vartobestclique[var]):
+                                        self.vartobestclique[var]=clique
+                t=time.time() -t
+                print('1: ',t)
+                t=time.time()
+                best=set(self.vartobestclique[var])
+                lis=self.vartobestclique[var]
+                self.vartobestclique[var]=best 
+                for w in lis:
+                    #set the best clique for the other variables from that clique as well
                     try:
                         a=self.vartobestclique[w]
-                        po=set(self.vartobestclique[var]) - set(a)
+                        po=best-a
                         if po:
-                            self.vartobestclique[var]=list(po)
+                            #if po is not empty, that means that w has a best clique
+                            #assigned to it. remove this clique from var's best clique
+                            self.vartobestclique[var]=po | set([var])
                         else:
                             self.vartobestclique[w]=self.vartobestclique[var]        
                     except:
                         self.vartobestclique[w]=self.vartobestclique[var]
-                self.Cliques.append(self.vartobestclique[var])                                           
+                t=time.time() -t
+                print('2: ', t)
+                self.Cliques.append(list(self.vartobestclique[var]))                                           
         def FindCliquePartitionDSatur(self):
             self.Cliques=[]
             coloredneigh=[]
@@ -809,7 +882,10 @@ try:
                     expr2=expr2+cHat[v]*g.getVarByName(v)
             else:
                 for v in cli:
-                    pvalues[v]=g.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
+                    try:
+                        a=pvalues[v]
+                    except:
+                        pvalues[v]=g.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
                 expr1=sum(pvalues[v] for v in cli) +z
                 expr2=0
                 expr2=sum(cHat[v]*g.getVarByName(v) for v in cli)
@@ -886,10 +962,12 @@ try:
                 weights[v]=(g.getVarByName(v)).x
             ExtendedRobustFormulation(g, z, pvalues, cHat, weights)
             
-    gamma, cHat = readInstance('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/RobustnessComponents/air03_g=40_d=45-55_r=0.txt')
-    m4 = gp.read('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/air03.mps')
-    #originvars=[y.VarName for y in m.getVars()]        
-    cHat, pvalues, z =RobustFormulation(m4, gamma, True, "cover", cHat)
+    gamma, cHat = readInstance('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/RobustnessComponents/n3seq24_g=100_d=45-55_r=0.txt')
+    m4 = gp.read('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/n3seq24.mps')
+    originvars=[y.VarName for y in m4.getVars()]        
+    cHat, pvalues, z =RobustFormulation(m4, gamma, False, "", cHat)
+    g4=m4.relax()
+    g4.optimize()
                           
 except gp.GurobiError as e:
     print('Error code ' + str(e.errno) + ': ' + str(e))
