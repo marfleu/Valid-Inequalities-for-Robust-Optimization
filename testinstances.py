@@ -54,7 +54,12 @@ m2=m.copy()
 m3=m.copy()
 m4=m.copy()
 gamma=2
+cHat={}
+for var in m.getVars():
+    cHat[var]=1
+    
 cHat, pvalues, z = mr.RobustFormulation(m, gamma)
+mr.extendMultipleTimes(m, gamma, 1, z, pvalues, cHat)
 m.optimize() 
 weights={}
 for v in m.getVars():
@@ -63,6 +68,7 @@ cHat, pvalues, z =mr.RobustFormulation(m2, gamma, False, "default", cHat)
 cHat, pvalues, z =mr.RobustFormulation(m3, gamma, True, "default", cHat)
 cHat, pvalues, z =mr.RobustFormulation(m1, gamma, True, "dsatur", cHat)
 cHat, pvalues, z =mr.RobustFormulation(m4, gamma, False, "cover", cHat)
+
 g=m.relax()
 g1=m1.relax()
 g2=m2.relax()

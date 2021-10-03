@@ -85,8 +85,7 @@ try:
         g.update()
         return expr
     
-    def readCHat(file):
-        print(file)
+
         
         
 
@@ -223,6 +222,7 @@ try:
         Builds a Conflict Graph on variables with weights above a certain 
         cutoff value. By default also creates the adjacency matrix of this 
         graph.
+        Method in particular ignores inequalities with the variable z.
 
         Parameters
         ----------
@@ -236,7 +236,7 @@ try:
         Returns
         -------
         list of
-            several interesting datastructures for a Conflict Graph:
+            several important datastructures for a Conflict Graph:
                 C --> list, with entries for every inequality from g;
                       every entry is again a list of cliques in the 
                       Conflict Graph extracted from the inequality, either 
@@ -306,12 +306,12 @@ try:
             b=b*typ
             #initialize the variables and adjust the right hand sides:
             for i in range(0,c.size()):  
-                #permute through all elements of the constraint
+                #permute through all variables in the constraint
                 coff=c.getCoeff(i)*typ   
                 #inverse the sign of the coefficient
                 var=c.getVar(i)
                 if var.VarName == z:
-                    # constraints which  contain z variable, shall be ignored
+                    # constraints, which  contain z variable, shall be ignored
                     l.pop()
                     encounteredz=True
                     break
@@ -327,10 +327,11 @@ try:
                 except:
                     continue
             if encounteredz:
-                #goes to next constraint, if current constraint contains z-variable
+                #go to next constraint, if current constraint contains z-variable
                 encounteredz=False
                 continue
             l[n]=sorted(l[n],key=lambda x: x[1])
+            print(l[n])
             #initialize links var --> clique, var --> var:
             for k in range(0,len(l[n])):
                 try:
@@ -342,6 +343,7 @@ try:
             b-=adjustb
             up=len(l[n])-2
             if up < 0:
+                n+=1
                 continue
             down=0
             if (equality and l[n][up][1]+l[n][up+1][1] <= b) or (not equality and l[n][up][1]+l[n][up+1][1] < b):
@@ -597,9 +599,6 @@ try:
                                                 clique.append(l[n][i][0])
                                     if len(clique)> len(self.vartobestclique[var]):
                                         self.vartobestclique[var]=clique
-                t=time.time() -t
-                print('1: ',t)
-                t=time.time()
                 best=set(self.vartobestclique[var])
                 lis=self.vartobestclique[var]
                 self.vartobestclique[var]=best 
@@ -616,9 +615,8 @@ try:
                             self.vartobestclique[w]=self.vartobestclique[var]        
                     except:
                         self.vartobestclique[w]=self.vartobestclique[var]
-                t=time.time() -t
-                print('2: ', t)
-                self.Cliques.append(list(self.vartobestclique[var]))                                           
+                self.Cliques.append(list(self.vartobestclique[var]))   
+                                        
         def FindCliquePartitionDSatur(self):
             self.Cliques=[]
             coloredneigh=[]
@@ -861,13 +859,16 @@ try:
                     #r=rand.random()  ###keep this random option for now
                     r=rand.choice([0.2,0.4,0.6,0.8])
                     if abs(objVars[var]) > 0:
-                        cHat[var]=abs(r*objVars[var.VarName])
+                        cHat[var.VarName]=abs(r*objVars[var.VarName])
+                        cHat[var.VarName]=0
                     else:
                         cHat[var.VarName]=abs(r)
+                        cHat[var.VarName]=0
                         
                 except:
                     r=rand.random()
                     cHat[var.VarName]=r
+                    cHat[var.VarName]=0
             # expr2=cHat[var.VarName]*var
             # robEq[var]=g.addConstr(expr1 >= expr2)
             # g.update()
@@ -915,12 +916,12 @@ try:
 
         """
         G=ConflictGraph()
-        [G.Cliques,G.Equations,G.vartovar,G.vartoclique, G.numbering]=buildWeightedConflictGraph(g, z.VarName, weights, 0.01)
+        [G.Cliques,G.Equations,G.vartovar,G.vartoclique, G.numbering]=buildWeightedConflictGraph(g, z, weights, 0.01)
         G.FindCliquePartitionDSatur()
         Cliques=G.Cliques
         for cli in Cliques:
             #print("hier cli ", cli)
-            expr1=sum(g.getVarByName(pvalues[v].VarName) for v in cli) +g.getVarByName(z.VarName)
+            expr1=sum(g.getVarByName(pvalues[v].VarName) for v in cli) +g.getVarByName(z)
             expr2=0
             for i in range(len(cli)):
                 #print(cHat[cli[i]])
@@ -931,7 +932,7 @@ try:
         g.update()
         
     
-    def extendMultipleTimes(g, gamma, z, pvalues, n, cHat={}):
+    def extendMultipleTimes(g, gamma, n, z='z', pvalues={}, cHat={}):
         """
         
 
@@ -949,25 +950,72 @@ try:
         None.
 
         """
-        originvarnames=[y.VarName for y in g.getVars]
+        ps=set()
+        if pvalues:
+            for t in pvalues:
+                ps= ps | set([t])
+            originvarnames=[y for y in ps]
+        #originvarnames=[y for y in originvarnames if not y in ps]
+        #print(originvarnames)
         m=g.copy()
         #build a standard robust formulation, without cliques or anything
-        cHat, z, pvalues = RobustFormulation(g, gamma, False, "none",  cHat)
-        g.relax()
+        if not pvalues:
+            originvarnames=[y.VarName for y in g.getVars()]
+            cHat, pvalues, z = RobustFormulation(g, gamma, False, "none",  cHat)
+        print(z)
+        g=g.relax()
         g.optimize()
-        for i in range(n-1):
+        for i in range(n):
             weights={}
             for v in originvarnames:
                 # get all objective values of the original formulation and form the dictionary weights
                 weights[v]=(g.getVarByName(v)).x
-            ExtendedRobustFormulation(g, z, pvalues, cHat, weights)
-            
-    gamma, cHat = readInstance('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/RobustnessComponents/n3seq24_g=100_d=45-55_r=0.txt')
-    m4 = gp.read('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/n3seq24.mps')
+            ExtendedRobustFormulation(g, z.VarName, pvalues, cHat, weights)
+            g.optimize()
+        return g.ObjVal
+
+    def addKnapsack(g, gamma, pvalues, cHat):
+        constrs=g.getConstrs()
+        for con in range(0,len(constrs)):
+            adjustb=0
+            b=constrs[con].RHS
+            l.append([])
+            Temp=[]
+            c=g.getRow(constrs[con])
+            #print(n, c)
+            typ=constrs[con].sense
+            #handle the different kinds of (in)equalities possible; in particular the order has to be changed
+            if typ == '<=' or typ=='>=' or typ =='==':
+                equality=True
+            else:
+                equality=False
+            if typ == '>' or typ=='>=':
+                typ=-1
+            else:
+                typ=1
+            #there are only equalities
+            equality=True
+            #inverse all signs, if the inequalities are > or >=:
+            b=b*typ
+            #initialize the variables and adjust the right hand sides:
+            for i in range(0,c.size()):  
+                #permute through all elements of the constraint
+                coff=c.getCoeff(i)*typ   
+                #inverse the sign of the coefficient
+                if coff > 0:
+                    l[n].append([c.getVar(i).VarName,coff, 1]) 
+                    #l[n][i] contains variable at position 0, coefficinet at 1 and 0 at 2, if we consider the complement
+                elif coff < 0:
+                    adjustb+=coff
+                    l[n].append([c.getVar(i).VarName,-coff,0])
+                    
+    gamma, cHat = readInstance('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/RobustnessComponents/h80x6320_g=70_d=5-15_r=0.txt')
+    m4 = gp.read('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/h80x6320.mps')
     originvars=[y.VarName for y in m4.getVars()]        
-    cHat, pvalues, z =RobustFormulation(m4, gamma, False, "", cHat)
-    g4=m4.relax()
-    g4.optimize()
+#    cHat, pvalues, z =RobustFormulation(m4, gamma, False, "default", cHat)
+    extendMultipleTimes(m4, gamma, 1, 'z', {}, cHat)
+ 
+
                           
 except gp.GurobiError as e:
     print('Error code ' + str(e.errno) + ': ' + str(e))

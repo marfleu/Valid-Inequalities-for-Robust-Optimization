@@ -22,6 +22,7 @@ def CompareRobustMethods(file, file2):
     m2=m.copy()
     m3=m.copy()
     m4=m.copy()
+    m5=m.copy()
     t0=time.time()
     cHat, pvalues, z = mr.RobustFormulation(m, gamma, True, "none", cHat)
     p=len(pvalues)
@@ -46,16 +47,13 @@ def CompareRobustMethods(file, file2):
     t7=time.time()
     g3.optimize()
     t7=time.time()-t7
-    weights={}
-    for v in originvars:
-        weights[v]=g.getVarByName(v).x
     t4=time.time()
-    cHat, pvalues, z =mr.RobustFormulation(m2, gamma, True, "dsaturw", cHat, weights)
+    val2=mr.extendMultipleTimes(m2, gamma, 1, 'z',{}, cHat)
     p2=len(pvalues)
     t4=time.time()-t4
-    g2=m2.relax()
+    #g2=m2.relax()
     t5=time.time()
-    g2.optimize()
+    val3=mr.extendMultipleTimes(m5, gamma, 3, 'z',{}, cHat)
     t5=time.time() -t5
     t8=time.time()
     cHat, pvalues, z = mr.RobustFormulation(m4, gamma, False, "cover", cHat)
@@ -67,7 +65,7 @@ def CompareRobustMethods(file, file2):
     t9=time.time()-t9
     l=[g.getVarByName(v).x for v in originvars if abs(g.getVarByName(v).x)>0.001]
     l1=[g1.getVarByName(v).x for v in originvars if abs(g1.getVarByName(v).x)>0.001]
-    l2=[g2.getVarByName(v).x for v in originvars if abs(g2.getVarByName(v).x)>0.001]
+    #l2=[g2.getVarByName(v).x for v in originvars if abs(g2.getVarByName(v).x)>0.001]
     l3=[g3.getVarByName(v).x for v in originvars if abs(g3.getVarByName(v).x)>0.001]
     l4=[g3.getVarByName(v).x for v in originvars if abs(g4.getVarByName(v).x)>0.001]
     data={}
@@ -90,12 +88,18 @@ def CompareRobustMethods(file, file2):
     data['default']['Computation Time']=t7
     data['default']['p-Values']=p3
     data['default']['nonzeroes']=len(l3)
-    data['dsatweight']={}
-    data['dsatweight']['Objective value']=g2.ObjVal
-    data['dsatweight']['Building Time']=t4
-    data['dsatweight']['Computation Time']=t5
-    data['dsatweight']['p-Values']=p2
-    data['dsatweight']['nonzeroes']=len(l2)
+    data['ext1']={}
+    data['ext1']['Objective value']=val2
+    data['ext1']['Building Time']=t4
+    data['ext1']['Computation Time']=0
+    data['ext1']['p-Values']=p2
+    data['ext1']['nonzeroes']=0
+    data['ext3']={}
+    data['ext3']['Objective value']=val3
+    data['ext3']['Building Time']=t5
+    data['ext3']['Computation Time']=0
+    data['ext3']['p-Values']=p2
+    data['ext3']['nonzeroes']=0
     data['cover']={}
     data['cover']['Objective value']=g4.ObjVal
     data['cover']['Building Time']=t8
@@ -137,9 +141,9 @@ i=0
 j=0
 for file in os.listdir('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen'):
     pattern=re.search('[^\.]+', file)
-    # i+=1
-    # if i >=5:
-    #     break
+    i+=1
+    if i < 10:
+        continue
     #print(type(pattern.group(0)))
     for file2 in os.listdir('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/RobustnessComponents'):
         # if j >=5:
