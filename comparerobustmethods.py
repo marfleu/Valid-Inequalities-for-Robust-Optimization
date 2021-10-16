@@ -289,7 +289,7 @@ j=0
 for file in os.listdir('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen'):
     pattern=re.search('[^\.]+', file)
     i+=1
-    if i > 40 or i < 33:
+    if not (i>=62):
         continue
     #print(type(pattern.group(0)))
     for file2 in os.listdir('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/RobustnessComponents'):
