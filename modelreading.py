@@ -1218,7 +1218,7 @@ try:
                     #l[n].append([c.getVar(i).VarName,-coff,0])
             if encounteredz:
                 continue
-            print(expr1, expr2)
+            #print(expr1, expr2)
             expr2+=(b - adjustb)*g.getVarByName(z)
             g.addConstr(expr1 <= expr2)
         g.update()
@@ -1253,33 +1253,6 @@ try:
                     violcons.append([con, expr1, con.rhs, con.sense])
                         #print(expr1, con.RHS, con.sense, '>=');
         return violcons, m
-        
-    gamma, cHat = readInstance('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/RobustnessComponents/qap10_g=40_d=5-15_r=0_json.json')
-    m4 = gp.read('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/qap10.mps')
-#     m5 = m4.copy()
-#     originvars=[y.VarName for y in m4.getVars()]   
-    cHat, pvalues, z =RobustFormulation(m4, gamma, False, "none", cHat)
-    m5=m4.copy()
-#     #val=extendMultipleTimes(m5, gamma, 3, 'z', {} , cHat)
-#     #print('Länge von p:', len(pvalues))
-#     cHat, pvalues, z =RobustFormulation(m4, gamma, False, "coverpartition", cHat)
-#     #extendMultipleTimes(m4, gamma, 3, 'z', {}, cHat)
-    ps={}
-    for var in pvalues:
-        ps[var]=pvalues[var].VarName
-    addKnapsack(m4, gamma, z.VarName, ps, cHat)
-# #     #violcons, m=ExtendCover(m5, gamma, cHat)
-# #    cHat, pvalues, z =RobustFormulation(m5, gamma, False, "coverpartition", cHat)
-    g4=m4.relax()
-    g5=m5.relax()
-    g4.optimize()
-    g5.optimize()
-    
-
-    
-    #g5.optimize()
-#    extendMultipleTimes(m4, gamma, 1, 'z', {}, cHat)
- 
 
                           
 except gp.GurobiError as e:

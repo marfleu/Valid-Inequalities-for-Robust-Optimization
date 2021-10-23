@@ -30,6 +30,7 @@ ext3={}
 cover={}
 coverext={}
 covercli={}
+df2=pd.DataFrame(columns=['gamma', 'range', 'bound',  'originaltime', 'originalvalue', 'defaultcliquetime', 'defaultcliquevalue', 'defaulttime', 'defaultvalue', 'ext1time', 'ext1value', 'ext3time', 'ext3value', 'covertime', 'covervalue', 'coverparttime', 'coverpartvalue', 'coverexttime', 'coverextvalue'])
 
 csvres=pd.read_csv('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Ergebnisse/ComputationalResults.csv', delimiter=';')
 for file2 in os.listdir('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/RobustnessComponents'):   
@@ -103,6 +104,9 @@ for file2 in os.listdir('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinst
             plt.ylabel('obj. value')
             plt.legend(loc='best')
             pattern=re.search('[^\.]+', file2)
+            df2.loc[len(df2)]=[gam, lb, y0, t1, y1, t2, y2, t3, y3, t4, y4, t6, y6, t5, y5, t7, y7, t8, y8]
+            a=len(df2)-1
+            df2=df2.rename(index={a: pattern.group(0)})
             #plt.savefig('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Grafiken/'+pattern.group(0))
             plt.close()
             f.close()
@@ -185,8 +189,93 @@ for m in [10, 40, 70, 100]:
                     methpos[x]+=1
             posmeth[m][methpos[x]]=x
                     
+# gaps={} 
+# gapswoz={}       
+# for m in [10, 40, 70, 100]:
+#     gaps={}
+#     for i in range(0, 7):
+#         meth=posmeth[m][i]
+#         numbers=[]        
+#         for n in range(0, len(defau[m])):
+#             y0=bound[m][n]
+#             y1=orig[m][n][1]
+#             y2=defau[m][n][1]
+#             y3=defaucli[m][n][1]
+#             y4=ext1[m][n][1]
+#             y5=ext3[m][n][1]
+#             y6=cover[m][n][1]
+#             y7=coverext[m][n][1]
+#             y8=covercli[m][n][1]
+#             if meth=='defau':
+#                 if y0 > 0:
+#                     numbers.append(y2/y0 - y1/y0)
+#                 else:
+#                     numbers.append(y0/y2 - y0/y1)
+#             if meth=='defaucli':
+#                 if y0 > 0:
+#                     numbers.append(y3/y0 - y1/y0)
+#                 else:
+#                     numbers.append(y0/y3 - y0/y1)
+#             if meth=='ext1':
+#                 if y0 > 0:
+#                     numbers.append(y4/y0 - y1/y0)
+#                 else:
+#                     numbers.append(y0/y4 - y0/y1)
+#             if meth=='ext3':
+#                 if y0 > 0:
+#                     numbers.append(y5/y0 - y1/y0)
+#                 else:
+#                     numbers.append(y0/y5 - y0/y1)
+#             if meth=='cover':
+#                 if y0 > 0:
+#                     numbers.append(y6/y0 - y1/y0)
+#                 else:
+#                     numbers.append(y0/y6 - y0/y1)
+#             if meth=='coverext':
+#                 if y0 > 0:
+#                     numbers.append(y7/y0 - y1/y0)
+#                 else:
+#                     numbers.append(y0/y7 - y0/y1)
+#             if meth=='covercli':
+#                 if y0 > 0:
+#                     numbers.append(y8/y0 - y1/y0)
+#                 else:
+#                     numbers.append(y0/y8 - y0/y1)
+#         for ts in avgtimes[meth]:
+#             if ts[2]==m:
+#                 meth+='\n' + str(round(ts[0], 2)) + '[' + str(round(ts[1],2)) + ']'
+#         gaps[meth]=numbers
+#         gapswoz[meth]=[y for y in numbers if abs(y)>0.005]
+#     df=pd.DataFrame(data=gaps)
+#     ax=sns.boxplot(data=df)
+
+#     ax.set_yscale('log')
+#     ax.set_ylim([0,1])
+#     plt.setp(ax.get_xticklabels(), rotation=0, horizontalalignment='right', fontsize='x-small')
+
+
+#     ax.yaxis.set_major_formatter(tick.FuncFormatter(lambda y,pos: ('{{:.{:1d}f}}'.format(int(np.maximum(-np.log10(y),0)))).format(y)))
+#     plt.savefig('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Grafiken/' + 'boxplot' + str(m))
+#     plt.close()
+#     df=df[(df.sum(axis=1) >= 0.0001)]
+#     ax=sns.stripplot(data=df, color='.3')
+#     ax = sns.violinplot(data=df, palette="Set2", split=True,scale="count", inner="quartile")    
+#     ax=sns.boxplot(data=df)
+#     y_ticks = np.arange(0, 5, 2)
+
+#     plt.yticks(y_ticks)
+#     ax.set_yscale('log')
+#     ax.set_ylim([0,1])
+#     plt.setp(ax.get_xticklabels(), rotation=0, horizontalalignment='right', fontsize='x-small')
+
+
+#     ax.yaxis.set_major_formatter(tick.FuncFormatter(lambda y,pos: ('{{:.{:1d}f}}'.format(int(np.maximum(-np.log10(y),0)))).format(y)))
+#     plt.savefig('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Grafiken/' + 'boxplotnonzeros' + str(m))
+#     plt.close()    
+
 gaps={} 
-gapswoz={}       
+gapswoz={} 
+means={}      
 for m in [10, 40, 70, 100]:
     gaps={}
     for i in range(0, 7):
@@ -240,34 +329,132 @@ for m in [10, 40, 70, 100]:
         for ts in avgtimes[meth]:
             if ts[2]==m:
                 meth+='\n' + str(round(ts[0], 2)) + '[' + str(round(ts[1],2)) + ']'
-        gaps[meth]=numbers
+        gaps[meth]=[round(y, 4) for y in numbers]
         gapswoz[meth]=[y for y in numbers if abs(y)>0.005]
+        means[meth]=[0,0]
+        means[meth][0]=np.mean(gaps[meth])
+        means[meth][1]=np.median(gaps[meth])
     df=pd.DataFrame(data=gaps)
-    ax=sns.boxplot(data=df)
+    ax=sns.swarmplot(data=df, color='.3', alpha=0.85, size=1.5)    
+    ax = sns.violinplot(data=df, palette="Set2", split=True,scale="count", inner="quartile", color='red')
 
-    ax.set_yscale('log')
-    ax.set_ylim([0,1])
+    #ax.set_yscale('log')
+    y_ticks = np.arange(0, 0.275, 0.025)
+
+    plt.yticks(y_ticks, fontsize='small')
+    ax.set_ylim([0,0.275])
     plt.setp(ax.get_xticklabels(), rotation=0, horizontalalignment='right', fontsize='x-small')
 
 
-    ax.yaxis.set_major_formatter(tick.FuncFormatter(lambda y,pos: ('{{:.{:1d}f}}'.format(int(np.maximum(-np.log10(y),0)))).format(y)))
+    #ax.yaxis.set_major_formatter(tick.FuncFormatter(lambda y,pos: ('{{:.{:1d}f}}'.format(int(np.maximum(-np.log10(y),0)))).format(y)))
     plt.savefig('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Grafiken/' + 'boxplot' + str(m))
     plt.close()
-    df.loc[~(df==0).all(axis=1)]
-    df= df[abs(df['ColName']) >= 0.00001]
     df=df[(df.sum(axis=1) >= 0.0001)]
-        
-    ax=sns.boxplot(data=df)
-
-    ax.set_yscale('log')
-    ax.set_ylim([0,1])
+    
+    ax=sns.swarmplot(data=df, color='.3', alpha=0.85, size=1.5)    
+    ax = sns.violinplot(data=df, palette="Set2", split=True ,scale="count", inner="quartile", showmeans=True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
+    
+    plt.yticks(y_ticks, fontsize='small')
+    ax.set_ylim([0,0.275])
     plt.setp(ax.get_xticklabels(), rotation=0, horizontalalignment='right', fontsize='x-small')
 
 
-    ax.yaxis.set_major_formatter(tick.FuncFormatter(lambda y,pos: ('{{:.{:1d}f}}'.format(int(np.maximum(-np.log10(y),0)))).format(y)))
+    #ax.yaxis.set_major_formatter(tick.FuncFormatter(lambda y,pos: ('{{:.{:1d}f}}'.format(int(np.maximum(-np.log10(y),0)))).format(y)))
     plt.savefig('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Grafiken/' + 'boxplotnonzeros' + str(m))
-    plt.close()    
+    plt.close();
 
+
+
+gapsrel={} 
+gapswoz={}
+meansrel={}       
+for m in [10, 40, 70, 100]:
+    gapsrel={}
+    for i in range(0, 7):
+        meth=posmeth[m][i]
+        numbers=[]        
+        for n in range(0, len(defau[m])):
+            y0=bound[m][n]
+            y1=orig[m][n][1]
+            y2=defau[m][n][1]
+            y3=defaucli[m][n][1]
+            y4=ext1[m][n][1]
+            y5=ext3[m][n][1]
+            y6=cover[m][n][1]
+            y7=coverext[m][n][1]
+            y8=covercli[m][n][1]
+            if meth=='defau':
+                if y0 > 0:
+                    numbers.append((y2/y0 - y1/y0)/(y1/y0))
+                else:
+                    numbers.append((y0/y2 - y0/y1)/(y0/y1))
+            if meth=='defaucli':
+                if y0 > 0:
+                    numbers.append((y3/y0 - y1/y0)/(y1/y0))
+                else:
+                    numbers.append((y0/y3 - y0/y1)/(y0/y1))
+            if meth=='ext1':
+                if y0 > 0:
+                    numbers.append((y4/y0 - y1/y0)/(y1/y0))
+                else:
+                    numbers.append((y0/y4 - y0/y1)/(y0/y1))
+            if meth=='ext3':
+                if y0 > 0:
+                    numbers.append((y5/y0 - y1/y0)/(y1/y0))
+                else:
+                    numbers.append((y0/y5 - y0/y1)/(y0/y1))
+            if meth=='cover':
+                if y0 > 0:
+                    numbers.append((y6/y0 - y1/y0)/(y1/y0))
+                else:
+                    numbers.append((y0/y6 - y0/y1)/(y0/y1))
+            if meth=='coverext':
+                if y0 > 0:
+                    numbers.append((y7/y0 - y1/y0)/(y1/y0))
+                else:
+                    numbers.append((y0/y7 - y0/y1)/(y0/y1))
+            if meth=='covercli':
+                if y0 > 0:
+                    numbers.append((y8/y0 - y1/y0)/(y1/y0))
+                else:
+                    numbers.append((y0/y8 - y0/y1)/(y0/y1))
+        for ts in avgtimes[meth]:
+            if ts[2]==m:
+                meth+='\n' + str(round(ts[0], 2)) + '[' + str(round(ts[1],2)) + ']'
+        gapsrel[meth]=[round(y, 4) for y in numbers]
+        meansrel[meth]=[0,0]
+        meansrel[meth][0]=np.mean(gapsrel[meth])
+        meansrel[meth][1]=np.median(gapsrel[meth])
+        gapswoz[meth]=[y for y in numbers if abs(y)>0.005]
+    df=pd.DataFrame(data=gapsrel)
+    ax=sns.swarmplot(data=df, color='red', alpha=0.85, size=1.5)  
+    ax.boxplot(df, showbox=False, showcaps=False, showfliers=False, showmeans=True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"}, medianprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"green"})  
+    ax = sns.boxenplot(data=df)
+
+    #ax.set_yscale('log')
+    y_ticks = np.arange(0, 0.9, 0.05)
+
+    plt.yticks(y_ticks, fontsize='small')
+    ax.set_ylim([0,0.5])
+    plt.setp(ax.get_xticklabels(), rotation=0, horizontalalignment='right', fontsize='x-small')
+
+
+    #ax.yaxis.set_major_formatter(tick.FuncFormatter(lambda y,pos: ('{{:.{:1d}f}}'.format(int(np.maximum(-np.log10(y),0)))).format(y)))
+    plt.savefig('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Grafiken/' + 'relativeboxplot' + str(m))
+    plt.close()
+    df=df[(df.sum(axis=1) >= 0.0001)]
+    
+    ax=sns.swarmplot(data=df, color='red', alpha=0.85, size=1.5)    
+    ax = sns.violinplot(data=df, palette="Set2", split=True ,scale="count", cut=1, inner="quartile", showmeans=True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
+    
+    plt.yticks(y_ticks, fontsize='small')
+    ax.set_ylim([0,0.9])
+    plt.setp(ax.get_xticklabels(), rotation=0, horizontalalignment='right', fontsize='x-small')
+
+
+    #ax.yaxis.set_major_formatter(tick.FuncFormatter(lambda y,pos: ('{{:.{:1d}f}}'.format(int(np.maximum(-np.log10(y),0)))).format(y)))
+    plt.savefig('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Grafiken/' + 'realativeboxplotnonzeros' + str(m))
+    plt.close();
 # gapsorig=[]
 # gapsdefau=[]
 # gapsdefaucli=[]
