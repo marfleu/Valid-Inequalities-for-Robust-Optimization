@@ -14,43 +14,7 @@ from bidict import bidict
 import re
 
 try:
-    # Create a new model
-    #m = gp.read('C:/Users/mariu/OneDrive/Dokumente/Python Scripts/ab71-20-100.mps')
-    #m=gp.Model('mip1')
-    # # Create variables
-    # x1 = m.addVar(vtype=GRB.BINARY, name="x1")
-    # x2 = m.addVar(vtype=GRB.BINARY, name="x2")
-    # x3 = m.addVar(vtype=GRB.BINARY, name="x3")
-    # x4 = m.addVar(vtype=GRB.BINARY, name="x4")
-    # x5 = m.addVar(vtype=GRB.BINARY, name="x5")
-    # x6 = m.addVar(vtype=GRB.BINARY, name="x6")
-    # x7 = m.addVar(vtype=GRB.BINARY, name="x7")
-    # x8 = m.addVar(vtype=GRB.BINARY, name="x8")
-    # x9 = m.addVar(vtype=GRB.BINARY, name="x9")
-    # x10 = m.addVar(vtype=GRB.BINARY, name="x10")
-    # x11 = m.addVar(vtype=GRB.BINARY, name="x11")
-    # x12 = m.addVar(vtype=GRB.BINARY, name="x12")
-    # x13 = m.addVar(vtype=GRB.BINARY, name="x13")
-    # x14 = m.addVar(vtype=GRB.BINARY, name="x14")
-    # x15 = m.addVar(vtype=GRB.BINARY, name="x15")
-    # # Set objective
-    # m.setObjective(-x1 - x2 - 2 * x3, GRB.MINIMIZE)
 
-    # # # Add constraint: x + 2 y + 3 z <= 4
-    # m.addConstr(x1 + x2 + x3 <= 1, "c0")
-    # m.addConstr(x4 + x5 + x6 <= 1, "c1")
-    # m.addConstr(x6 + x7 + x8 <= 1, "c2")
-    # m.addConstr(x9 + x7 + x8 <= 1, "c3")
-    # m.addConstr(x10 + 2*x11 + 2*x12+ x1 <= 2, "c4")
-    # m.addConstr(x13 + x2 + x3 - x15 <= 1, "c5")
-    # m.addConstr( x2 + x5 <= 1, "c6")
-    # m.addConstr( x4 + x3 +x5 <= 1, "c0")
-    # #Add constraint: x + y >= 1
-    # #m.addConstr(4* x1 + 3 * x2 + x10 +x9 +2* x8 <= 3, "c1")
-    # m.update()
-    
-    # Optimize model
-    #m.optimize()
                    
     def readInstance(file):  
         # reading the data from the file
@@ -466,15 +430,11 @@ try:
                                             self.vartobestclique[var]=clique
                 #trying to find the maximal clique containing the current clique.
                 #difficulties: often there is only a relation var1 --> var2 known, but not var2 --> var1
-                #and the adjacency relation is only revealed piece by piece.
-                #so naturally the maximal clique computation is often incomplete.
-                #example: x1 + x2+  2x3 + 2x4 <= 2; x2, x3, x4 form the biggest clique,
-                #but x3, x4 do not know their neighbour x1. Only x1 knows them.  
+                #and the adjacency relation is only revealed piece by piece. 
                 elems=[(v, len(self.vartoclique[v])) for v in self.vartobestclique[var]]
                 elems=sorted(elems, key=lambda x: x[1])
                 neighbours=set()
                 cli=set(self.vartobestclique[var])
-                #print("leng: ", len(self.vartobestclique[var]))
                 #determine all neighbours of clique members as far as possible
                 for w in elems:
                     #print("neigh: ", len(neighbours))
@@ -540,8 +500,9 @@ try:
                 #     if neighbours==cli:
                 #         break
                 self.vartobestclique[var]=list(neighbours)
-                for w in elems:
-                    self.vartobestclique[w[0]]=self.vartobestclique[var]
+                #for w in elems:
+                for w in self.vartobestclique[var]:
+                    self.vartobestclique[w]=self.vartobestclique[var]
                 if self.vartobestclique[var]==[]:
                     self.vartobestclique[var]=[var]
                 self.Cliques.append(self.vartobestclique[var])
@@ -551,14 +512,18 @@ try:
             self.Cliques=[]
             l=self.Equations
             for var in self.numbering:
+                # assign a default best clique to every variable
+                #if said variable does not occur in any constraint
                 try: 
                     a=self.vartoclique[var]
                 except:
                     self.Cliques.append([var])
             for var in self.vartoclique:
+                # vartoclique points variables to their constraints, and indirectly to their cliques
                 try:
                     a=self.vartobestclique[var]
-                    #it can be assumed that the maximal clique of var has already been found
+                    #it can be assumed that the best clique of var has already been found
+                    # so var is already covered by partition
                     continue
                 except:
                     self.vartobestclique[var]=[var]
@@ -568,11 +533,15 @@ try:
                             n=tup[0]
                             if C[n]==[] or l[n][k][2]==0:    
                                 #in C[n] is no maximal clique for the row available; for example x1+x2+x3<=2
+                                #or var occurs only negated in constraint number n
                                 continue
                             else:
                                 for clis in C[n]:
                                     #clis are tuples of integers, either (j, j) (all indices >=j are in clique)
-                                    #or (s, j_s) (s and all indices >=j_s are in clique)
+                                    #or (s, j_s) (s and all indices >=j_s are in clique).
+                                    #indices j_s are always part of a maximal clique in that row (j,j).
+                                    #the situtation (s, j_s), where k>=j_s needs not be considered. the clique
+                                    #(j,j) will alway be greater in that case. 
                                     cliqueindex=clis[1]
                                     if k >= cliqueindex:
                                         #k>=cliqueindex says var is in biggest clique
@@ -580,17 +549,25 @@ try:
                                         clique=[]
                                         for i in range(cliqueindex, length):
                                             if l[n][i][2]==1:
+                                                #only consider unnegated variables from the clique
                                                 try:
+                                                    #if the considered variable is already covered by an optimal clique
+                                                    #it must not be appended to current clique
+                                                    #exception is var itself!!
                                                     a=self.vartobestclique[l[n][i][0]]
                                                     if l[n][i][0]==var:
                                                         clique.append(l[n][i][0])
                                                 except:    
                                                     #append non-negated variable to clique only 
+                                                    #this variable is not yet covered by an optimal clique
                                                     clique.append(l[n][i][0])
+                                        #remove duplicates
                                         clique=list(set(clique))        
                                         if len(clique)> len(self.vartobestclique[var]):
                                             self.vartobestclique[var]=clique
                                     elif k==clis[0]:
+                                        #situation where tuple is (s, j_s), s index of var, so the clique is
+                                        # {s, j_s, j_s + 1, ...}, without indices of negated variables
                                         clique=[]
                                         clique.append(l[n][k][0])
                                         length=len(l[n])
@@ -606,23 +583,22 @@ try:
                 #trying to find the maximal clique containing the current clique.
                 #difficulties: often there is only a relation var1 --> var2 known, but not var2 --> var1
                 #and the adjacency relation is only revealed piece by piece.
-                #so naturally the maximal clique computation is often incomplete.
-                #example: x1 + x2+  2x3 + 2x4 <= 2; x2, x3, x4 form the biggest clique,
-                #but x3, x4 do not know their neighbour x1. Only x1 knows them.  
                 elems=[(v, len(self.vartoclique[v])) for v in self.vartobestclique[var]]
                 elems=sorted(elems, key=lambda x: x[1])
                 neighbours=set()
                 cli=set(self.vartobestclique[var])
-                #print("leng: ", len(self.vartobestclique[var]))
                 #determine all neighbours of clique members as far as possible
+                #the order of computations is hopefully chosen such that
+                #an interruption of the loop below is early, if no maximal clique exists
                 for w in elems:
-                    #print("neigh: ", len(neighbours))
-                    #print("cli: ", len(cli))
                     if abs(len(neighbours)-len(cli))/len(cli) < 0.005:
                         #interrupt search for maximal clique if said clique
-                        #can at most be 0.5% larger, than current clique
+                        #can at most be 0.5% larger, than current clique.
+                        #this is for speed up.
                         neighbours = cli
                         break
+                    #the following exception makes sure, that var is always in the neighbourhood
+                    #because otherwise it might be a problem, that vartobestclique[var] is already set
                     try:
                         if type(self.vartovar[w[0]])==list:
                             pass
@@ -633,8 +609,8 @@ try:
                         k=tup[1]
                         n=tup[0]    
                         if C[n]==[] or l[n][k][2]==0:    
-                                #in C[n] is no maximal clique for the row available; for example if corresp. ineq. is x1+x2+x3<=2
-                                continue
+                            #in C[n] is no maximal clique for the row available; for example if corresp. ineq. is x1+x2+x3<=2
+                            continue
                         else:
                             for clis in C[n]:
                                 cliqueindex=clis[1]
@@ -645,6 +621,8 @@ try:
                                     for i in range(cliqueindex, length):
                                         if l[n][i][2]==1:
                                             try:
+                                                #this statement is non-sensical, but if the best clique of the variable
+                                                #l[n][i][0] is already found, there will not be an exception 
                                                 if not self.vartobestclique[l[n][i][0]]==var:
                                                     a=self.vartobestclique[l[n][i][0]]
                                             except:
@@ -676,23 +654,23 @@ try:
                                                 self.vartovar[w[0]].append(l[n][clis[0]][0])
                                             except:
                                                 self.vartovar[w[0]]=[l[n][clis[0]][0]]
-                    t=time.time()-t
-                    #print("a", t)
-                    t=time.time()
+
                     if neighbours==set():
                         neighbours=set(self.vartovar[w[0]]) | set([var])
                     else:
+                        #neighbours is the set of common neighbours of all current clique members
+                        #so here the set intersection is formed
                         neighbours=neighbours & set(self.vartovar[w[0]])
-                    t=time.time() -t
-                    #print("b", t)
+
                     
                 #compute all intersections between neighbours
                 # for w in elems:
                 #     if neighbours==cli:
                 #         break
                 self.vartobestclique[var]=list(neighbours)
-                for w in elems:
-                    self.vartobestclique[w[0]]=self.vartobestclique[var]
+                #for w in elems:
+                for w in self.vartobestclique[var]:
+                    self.vartobestclique[w]=self.vartobestclique[var]
                 if self.vartobestclique[var]==[]:
                     self.vartobestclique[var]=[var]
                 self.Cliques.append(self.vartobestclique[var])
@@ -1237,21 +1215,21 @@ try:
         g.update()
         cons=g.getConstrs()
         violcons=[]
-        for con in cons:
-            c=g.getRow(con)
-            expr1=0
-            for t in range(0,c.size()):
-                var=c.getVar(t)
-                coff=c.getCoeff(t)
-                expr1+=coff*m.getVarByName(var.VarName).x
-            if con.sense == '<':
-                if expr1 - con.RHS > 0.0001:
-                    violcons.append([con, expr1, con.rhs, con.sense])
-                        #print(expr1, con.RHS, con.sense, '<=')
-            else:
-                if expr1 - con.RHS< -0.0001:
-                    violcons.append([con, expr1, con.rhs, con.sense])
-                        #print(expr1, con.RHS, con.sense, '>=');
+        # for con in cons:
+        #     c=g.getRow(con)
+        #     expr1=0
+        #     for t in range(0,c.size()):
+        #         var=c.getVar(t)
+        #         coff=c.getCoeff(t)
+        #         expr1+=coff*m.getVarByName(var.VarName).x
+        #     if con.sense == '<':
+        #         if expr1 - con.RHS > 0.0001:
+        #             violcons.append([con, expr1, con.rhs, con.sense])
+        #                 #print(expr1, con.RHS, con.sense, '<=')
+        #     else:
+        #         if expr1 - con.RHS< -0.0001:
+        #             violcons.append([con, expr1, con.rhs, con.sense])
+        #                 #print(expr1, con.RHS, con.sense, '>=');
         return violcons, m
 
                           
