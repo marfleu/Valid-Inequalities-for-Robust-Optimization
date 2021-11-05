@@ -54,6 +54,50 @@ try:
         
 
     def buildConflictGraph(g, adjacency=True):
+        """
+        Builds a partial Conflict Graph on variables of a combinatorial linear program g.
+        By default also creates the adjacency matrix of this 
+        graph (should be avoided for bigger instances). Iterates over all constraints of g
+        and tries to find obvious conflicts.
+
+        Parameters
+        ----------
+        g : Gurobipy combinatorial (non! robust formulation) ILP 
+        adjacency : TYPE, optional
+            DESCRIPTION. The default is True.
+
+        Returns
+        -------
+        list of
+            several important datastructures for a Conflict Graph:
+                C --> list, with entries for every inequality from g;
+                      every entry is again a list of cliques in the 
+                      Conflict Graph extracted from the inequality, either 
+                      as a tuple (i, i), coressponding to a clique of
+                      variables x_i, x_{i+1}, ..., x_n, variables being 
+                      numbered in increasing order defined by their coefficients
+                      in the inequality, or a tuple (j, i) with j < i, corresponding
+                      to a clique of x_j, x_i, x_{i+1}, ..., x_n;
+                l --> list, with entries for every inequality from g;
+                      every entry is a tuple of three;
+                      tuple entry 0 --> variable name
+                      tuple entry 1 --> coefficient of this variable in adjusted inequality
+                      tuple entry 2 --> 0: if variable appears negated in adjusted ineq.
+                                        1: if variable appears unnegated in adjusted ineq.
+                vartoclique --> dictionary: variable --> list of tuples with two entries each
+                                                         first of which points to an inequality n
+                                                         second pointing to the index in the ordering
+                                                         by coefficients of the variable in this ineq.
+                vartoclique --> dictionary: variable --> list of tuples with two entries each
+                                                         first of which points to an inequality n
+                                                         second pointing to the index in the ordering
+                                                         by coefficients of the variable in this ineq.
+                numbering --> a bidirectional dictionary: variable <--> unique number; mostly used if adjacency=True
+                                                                        to be more efficient
+                vartovar --> dictionary: variable --> adjacency matrix row; is empty, if adjacency=False                
+                      
+
+        """
         constrs=g.getConstrs()
         n=0
         l=[]
@@ -76,7 +120,6 @@ try:
             l.append([])
             Temp=[]
             c=g.getRow(constrs[con])
-            #print(n, c)
             typ=constrs[con].sense
             #handle the different kinds of (in)equalities possible; in particular the order has to be changed
             if typ == '<=' or typ=='>=' or typ =='==':
@@ -95,7 +138,7 @@ try:
             for i in range(0,c.size()):  
                 #permute through all elements of the constraint
                 coff=c.getCoeff(i)*typ   
-                #inverse the sign of the coefficient
+                #inverse the sign of the coefficient if necessary
                 if coff > 0:
                     l[n].append([c.getVar(i).VarName,coff, 1]) 
                     #l[n][i] contains variable at position 0, coefficinet at 1 and 0 at 2, if we consider the complement
@@ -136,16 +179,13 @@ try:
             #Cliques are saved in the form: index from start element, uninterrupted 
             if adjacency:
                 #this is very costly in some instances, as for this may take m*n^2 operations,
-                #if many variables occur in one clique inequality
+                #if many variables occur in one clique inequality, better avoided
                 for k in range(up,len(l[n])):
                     for j in range(k+1,len(l[n])):
                             if l[n][k][2]==1 and l[n][j][2]==1:
-                                #vartovar[l[n][k][0]].append(l[n][j][0].VarName)
-                                #vartovar[l[n][j][0]].append(l[n][k][0].VarName)
                                 vartovar[numbering[l[n][k][0]]][numbering[l[n][j][0]]] =1
                                 vartovar[numbering[l[n][j][0]]][numbering[l[n][k][0]]] =1
-                                #vartovar[l[n][k][0]]=list(set(vartovar[l[n][k][0]]))
-                                #vartovar[l[n][j][0]]=list(set(vartovar[l[n][j][0]]))
+
             s=up
             for j in range(0,s):
                 up=len(l[n])-1
@@ -172,8 +212,6 @@ try:
                             vartovar[numbering[l[n][k][0]]][numbering[l[n][j][0]]] =1
                             vartovar[numbering[l[n][j][0]]][numbering[l[n][k][0]]] =1
             C.append(Temp)
-            #if n % 1 == 0:
-             #   print(C[n], n)
             n+=1
         return [C,l,vartovar,vartoclique, numbering]
     
@@ -215,7 +253,9 @@ try:
                                                          first of which points to an inequality n
                                                          second pointing to the index in the ordering
                                                          by coefficients of the variable in this ineq.
-                      
+                numbering --> a bidirectional dictionary: variable <--> unique number; mostly used if adjacency=True
+                                                                        to be more efficient
+                vartovar --> dictionary: variable --> adjacency matrix row; is empty, if adjacency=False
 
         """
         constrs=g.getConstrs()
@@ -331,12 +371,9 @@ try:
                 for k in range(up,len(l[n])):
                     for j in range(k+1,len(l[n])):
                             if l[n][k][2]==1 and l[n][j][2]==1:
-                                #vartovar[l[n][k][0]].append(l[n][j][0].VarName)
-                                #vartovar[l[n][j][0]].append(l[n][k][0].VarName)
                                 vartovar[numbering[l[n][k][0]]][numbering[l[n][j][0]]] =1
                                 vartovar[numbering[l[n][j][0]]][numbering[l[n][k][0]]] =1
-                                #vartovar[l[n][k][0]]=list(set(vartovar[l[n][k][0]]))
-                                #vartovar[l[n][j][0]]=list(set(vartovar[l[n][j][0]]))
+                         
             s=up
             for j in range(0,s):
                 up=len(l[n])-1
@@ -363,8 +400,6 @@ try:
                             vartovar[numbering[l[n][k][0]]][numbering[l[n][j][0]]] =1
                             vartovar[numbering[l[n][j][0]]][numbering[l[n][k][0]]] =1
             C.append(Temp)
-            #if n % 1 == 0:
-             #   print(C[n], n)
             n+=1
         return [C,l,vartovar,vartoclique, numbering]
     
@@ -428,7 +463,7 @@ try:
                                         clique=list(set(clique)) 
                                         if len(clique)> len(self.vartobestclique[var]):
                                             self.vartobestclique[var]=clique
-                #trying to find the maximal clique containing the current clique.
+                #trying to find a maximal clique containing the current clique.
                 #difficulties: often there is only a relation var1 --> var2 known, but not var2 --> var1
                 #and the adjacency relation is only revealed piece by piece. 
                 elems=[(v, len(self.vartoclique[v])) for v in self.vartobestclique[var]]
@@ -437,11 +472,9 @@ try:
                 cli=set(self.vartobestclique[var])
                 #determine all neighbours of clique members as far as possible
                 for w in elems:
-                    #print("neigh: ", len(neighbours))
-                    #print("cli: ", len(cli))
                     if abs(len(neighbours)-len(cli))/len(cli) < 0.005:
                         #interrupt search for maximal clique if said clique
-                        #can at most be 0.5% larger, than current clique
+                        #can at most be 0.5% larger, than current clique, it is for speedup
                         neighbours = cli
                         break
                     try:
@@ -485,15 +518,11 @@ try:
                                                 self.vartovar[w[0]].append(l[n][clis[0]][0])
                                             except:
                                                 self.vartovar[w[0]]=[l[n][clis[0]][0]]
-                    t=time.time()-t
-                    #print("a", t)
-                    t=time.time()
                     if neighbours==set():
                         neighbours=set(self.vartovar[w[0]])
                     else:
                         neighbours=neighbours & set(self.vartovar[w[0]])
-                    t=time.time() -t
-                    #print("b", t)
+
                     
                 #compute all intersections between neighbours
                 # for w in elems:
@@ -672,6 +701,8 @@ try:
                 for w in self.vartobestclique[var]:
                     self.vartobestclique[w]=self.vartobestclique[var]
                 if self.vartobestclique[var]==[]:
+                    #may occur, if var is not in any constraint, or is not in any clique
+                    #in any constraint
                     self.vartobestclique[var]=[var]
                 self.Cliques.append(self.vartobestclique[var])
         def FindCliquePartitionDefault(self):
