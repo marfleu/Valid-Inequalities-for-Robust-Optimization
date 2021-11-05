@@ -4,6 +4,14 @@ Created on Tue Oct 26 08:46:36 2021
 
 @author: User
 """
+import modelreading as mr
+import gurobipy as gp
+from gurobipy import GRB
+import random as rand
+import mappedqueue as mapq
+import time
+from bidict import bidict
+import re
 
 def separateConflictGraph(g, z, weights, cutoff, cHat):
     """
@@ -53,7 +61,7 @@ def separateConflictGraph(g, z, weights, cutoff, cHat):
     vartoclique={}
     vartovar={}
     index=0
-    numbering=bidict({})
+    # numbering=bidict({})
     Vars=[]
     encounteredz=False
     for y in g.getVars():
@@ -63,12 +71,11 @@ def separateConflictGraph(g, z, weights, cutoff, cHat):
         except:
             continue
     #Vars=[y for y in g.getVars() if weights[y.VarName]>cutoff]
-    m=len(Vars)
     #initialise map variables <--> indices
-    for var in Vars:
-        numbering[var]=index
-        vartoclique[var]=[]
-        index+=1
+    # for var in Vars:
+    #     numbering[var]=index
+    #     vartoclique[var]=[]
+    #     index+=1
     for con in range(0,len(constrs)):
         adjustb=0
         b=constrs[con].RHS
@@ -97,15 +104,16 @@ def separateConflictGraph(g, z, weights, cutoff, cHat):
             coff=c.getCoeff(i)*typ   
             #inverse the sign of the coefficient
             var=c.getVar(i)
-            coefficients[var.VarName]=coff
-            coff2=weights[z] + weights['p'+var.VarName] - weights[var.VarName]
-            objectives[var.VarName]=coff2
-            coff=coff2/coff
-            if var.VarName == z:
+
+            if var.VarName == z.VarName:
                 # constraints, which  contain z variable, shall be ignored
                 l.pop()
                 encounteredz=True
                 break
+            coefficients[var.VarName]=coff
+            coff2=weights[z.VarName] + weights['p'+var.VarName] - cHat[var.VarName]*weights[var.VarName]
+            objectives[var.VarName]=coff2
+            coff=coff2/coff
             try:
                 if coff > 0 and weights[var.VarName] > cutoff:
                     #variable with positive coefficient is only considered, if its predefined
@@ -143,26 +151,28 @@ def separateConflictGraph(g, z, weights, cutoff, cHat):
         for k in range(0,len(l[n])):
             LHS+=coefficients[l[n][k][0]]
             OBJ+=objectives[l[n][k][0]]
-            if LHS > b and OBJ < weights[z]:
-                
-                if coefficients[l[n][k][0]] < mini[1]:
+            if coefficients[l[n][k][0]] < mini[1]:
                     mini[0]=k
                     mini[1]=coefficients[l[n][k][0]]
+            if LHS > b and OBJ < weights[z.VarName]:
                 ind=k
                 break
+            elif LHS > b:
+                ind=k
         if ind>0:
             Temp.append((0, ind))
             cover=sum(cHat[l[n][j][0]]*g.getVarByName(l[n][j][0]) for j in range(0, ind + 1))
             RHS=sum(g.getVarByName('p'+l[n][j][0]) for j in range(0, ind + 1))
             for k in range(ind, len(l[n])):
-                if coefficients[l[n][k][0]] > mini[1]:
+                if coefficients[l[n][k][0]] >= mini[1]:
                     cover+=cHat[l[n][k][0]]*g.getVarByName(l[n][k][0]) 
                     RHS+=g.getVarByName('p'+l[n][k][0])
-            RHS+=(ind-1)*g.getVarByName(z)
-            g.addConstr(LHS <= RHS)            
+            RHS+=(ind)*g.getVarByName(z.VarName)
+            g.addConstr(cover <= RHS)            
         C.append(Temp)
         n+=1
-    return [C,l,vartovar,vartoclique, numbering]
+    g.update()
+    return [C,l,vartovar,vartoclique]
 
 
 def ExtendedRobustFormulation(g, z, pvalues, cHat, weights):
@@ -183,11 +193,11 @@ def ExtendedRobustFormulation(g, z, pvalues, cHat, weights):
     previous solution of  g.
 
     """
-    G=ConflictGraph()
+    G=mr.ConflictGraph()
     [G.Cliques,G.Equations,G.vartovar,G.vartoclique,G.numbering]=separateConflictGraph(g, z, weights, 0.01, cHat)
     #G.FindCliquePartitionDSatur()
-    G.FindCliqueCover()
-    Cliques=G.Cliques
+    #G.FindCliqueCover()
+    #Cliques=G.Cliques
     for cli in Cliques:
         #print("hier cli ", cli)
         expr1=sum(g.getVarByName(pvalues[v].VarName) for v in cli) +g.getVarByName(z)
@@ -201,44 +211,54 @@ def ExtendedRobustFormulation(g, z, pvalues, cHat, weights):
     g.update()
 
 def extendMultipleTimes(g, gamma, n, z='z', pvalues={}, cHat={}):
-"""
-
-
-Parameters
-----------
-g : gurobipy instance of non-robust model, non-relaxed, non-optimized
-gamma: 'gamma'-value from Robust Formulation 
-z : Gurobi variable 'z' from Robust Formulation
-pvalues : dictionary of Gurobi variables of all 'p'-variables from Robust Formulation
-cHat: dictionary of worst case deviations for Robust Formulation (Gurobi.var.name --> value) 
-n : number of extensions to be applied to the model
-
-Returns
--------
-None.
-
-"""
-ps=set()
-if pvalues:
-    for t in pvalues:
-        ps= ps | set([t])
-    originvarnames=[y for y in ps]
-#originvarnames=[y for y in originvarnames if not y in ps]
-#print(originvarnames)
-m=g.copy()
-#build a standard robust formulation, without cliques or anything
-if not pvalues:
-    originvarnames=[y.VarName for y in g.getVars()]
-    cHat, pvalues, z = RobustFormulation(g, gamma, False, "none",  cHat)
-print(z)
-g=g.relax()
-g.optimize()
-for i in range(n):
-    weights={}
-    for v in g.getVars():
-        # get all objective values of the original formulation and form the dictionary weights
-        weights[v.VarName]=(g.getVarByName(v.VarName)).x
-    ExtendedRobustFormulation(g, z.VarName, pvalues, cHat, weights)
+    """
+    
+    
+    Parameters
+    ----------
+    g : gurobipy instance of non-robust model, non-relaxed, non-optimized
+    gamma: 'gamma'-value from Robust Formulation 
+    z : Gurobi variable 'z' from Robust Formulation
+    pvalues : dictionary of Gurobi variables of all 'p'-variables from Robust Formulation
+    cHat: dictionary of worst case deviations for Robust Formulation (Gurobi.var.name --> value) 
+    n : number of extensions to be applied to the model
+    
+    Returns
+    -------
+    None.
+    
+    """
+    ps=set()
+    if pvalues:
+        for t in pvalues:
+            ps= ps | set([t])
+        originvarnames=[y for y in ps]
+    #originvarnames=[y for y in originvarnames if not y in ps]
+    #print(originvarnames)
+    m=g.copy()
+    #build a standard robust formulation, without cliques or anything
+    if not pvalues:
+        originvarnames=[y.VarName for y in g.getVars()]
+        cHat, pvalues, z = mr.RobustFormulation(g, gamma, False, "none",  cHat)
+    print(z)
     g=g.relax()
     g.optimize()
-return g.ObjVal
+    for i in range(n):
+        weights={}
+        for v in g.getVars():
+            # get all objective values of the original formulation and form the dictionary weights
+            weights[v.VarName]=(g.getVarByName(v.VarName)).x
+        G=mr.ConflictGraph()
+        [G.Cliques,G.Equations,G.vartovar,G.vartoclique]=separateConflictGraph(g, z, weights, -0.01, cHat)
+        g=g.relax()
+        g.optimize()
+    return g.ObjVal
+
+gamma, cHat = mr.readInstance('C:/Users/User/Documents/Masterarbeit/data/neos-780889_g=40_d=45-55_r=0.txt')
+dHat=cHat
+m4 = gp.read('C:/Users/User/Documents/Masterarbeit/neos-780889.mps')
+m5=m4.copy()
+obj=extendMultipleTimes(m4, gamma, 6, 'z', {}, cHat)
+mr.RobustFormulation(m5, gamma, False, 'default', cHat)
+g5=m5.relax()
+g5.optimize()
