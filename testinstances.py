@@ -29,51 +29,72 @@ x13 = m.addVar(vtype=GRB.BINARY, name="x13")
 x14 = m.addVar(vtype=GRB.BINARY, name="x14")
 x15 = m.addVar(vtype=GRB.BINARY, name="x15")
 x16 = m.addVar(vtype=GRB.BINARY, name="x16")
+x17 = m.addVar(vtype=GRB.BINARY, name="x17")
+x18 = m.addVar(vtype=GRB.BINARY, name="x18")
+x19 = m.addVar(vtype=GRB.BINARY, name="x19")
+x20 = m.addVar(vtype=GRB.BINARY, name="x20")
+x21 = m.addVar(vtype=GRB.BINARY, name="x21")
+x22 = m.addVar(vtype=GRB.BINARY, name="x22")
 # Set objective
 m.setObjective(-x1 - x2 - 2 * x3 + -x4 -3* x5 - 2 * x6 - x13 + x15 -x16, GRB.MINIMIZE)
 
-# # Add constraint: x + 2 y + 3 z <= 4
+# # Add constraint: 
 m.addConstr(x1 + x2 + x3 <= 1, "c0")
 m.addConstr(x4 + x5 + x6 <= 1, "c1")
+m.addConstr(x1 + 2*x5 + 3*x6 <= 3, "c13")
+m.addConstr(x1 + x2 + x4 <= 1, "c14")
+m.addConstr(x2 + x3 + x5 <= 1, "c15")
+m.addConstr(x2 + x3 + x6 <= 1, "c16")
+m.addConstr(x4 + 2*x3 <= 2, "c17")
 m.addConstr(x6 + x7 + x8 <= 1, "c2")
 m.addConstr(x9 + x7 + x8 <= 1, "c3")
 m.addConstr(x10 + 2*x11 + 2*x12+ x1 <= 2, "c4")
 m.addConstr(x13 + x2 + x3 - x15 <= 1, "c5")
 m.addConstr( x2 + x5 <= 1, "c6")
 m.addConstr( x4 + x3 +x5 <= 1, "c7")
-#Add constraint: x + y >= 1
-#m.addConstr(4* x1 + 3 * x2 + x10 +x9 +2* x8 <= 3, "c1")
+m.addConstr( x4 + x3 >= 1, "c8")
+m.addConstr( x17 + x18 + x19 == 2, "c9")
+m.addConstr( x17 + x18 - x20 - 2*x21 <= 1, "c10")
+m.addConstr( 2*x17 + x18 + x19 + 3*x20+ 4*x21 + 3*x16 + 5*x9 <= 6, "c11")
+m.addConstr( x4 - x18 - x19 <= 2, "c12")
+
+
+
+
+
 m.update()
 
-#Optimize model
-
-
-
+#Build robust models
 m1=m.copy()
 m2=m.copy()
 m3=m.copy()
 m4=m.copy()
 gamma=2
-cHat={}
+dHat={}
 for var in m.getVars():
-    cHat[var]=1
+    dHat[var.VarName]=1
     
-cHat, pvalues, z = mr.RobustFormulation(m, gamma)
+cHat, pvalues, z = mr.RobustFormulation(m, gamma, False, 'none', dHat)
 mr.extendMultipleTimes(m, gamma, 1, z, pvalues, cHat)
 m.optimize() 
 weights={}
 for v in m.getVars():
     weights[v.VarName]=v.x
-cHat, pvalues, z =mr.RobustFormulation(m2, gamma, False, "default", cHat)
-cHat, pvalues, z =mr.RobustFormulation(m3, gamma, True, "default", cHat)
-cHat, pvalues, z =mr.RobustFormulation(m1, gamma, True, "dsatur", cHat)
-cHat, pvalues, z =mr.RobustFormulation(m4, gamma, False, "cover", cHat)
-
+cHat, pvalues, z =mr.RobustFormulation(m2, gamma, False, "none", dHat)
+ps={}
+for var in pvalues:
+    ps[var]=pvalues[var].VarName
+mr.addKnapsack(m2, gamma, z.VarName, ps, dHat)
+cHat, pvalues, z =mr.RobustFormulation(m3, gamma, True, "default", dHat)
+cHat, pvalues, z =mr.RobustFormulation(m1, gamma, False, "coverpartition", dHat)
+cHat, pvalues, z =mr.RobustFormulation(m4, gamma, False, "cover", dHat)
+#Relax
 g=m.relax()
 g1=m1.relax()
 g2=m2.relax()
 g3=m3.relax()
 g4=m4.relax()
+#Optimize
 m1.optimize()
 m2.optimize()
 m3.optimize()
