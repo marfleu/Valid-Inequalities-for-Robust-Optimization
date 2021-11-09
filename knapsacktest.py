@@ -3,23 +3,19 @@
 Created on Fri Oct 29 21:48:58 2021
 
 @author: mariu
+
+Script to compare the model solving times and objective values of addKnapsack to default Clique Partition approach.
 """
 
 import gurobipy as gp
-from gurobipy import GRB
 import modelreading as mr
 import time
-import os
-import fnmatch
-import re
-import json
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 
-gamma, cHat = mr.readInstance('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/RobustnessComponents/tbfp-network_g=40_d=45-55_r=0.txt')
+
+
+gamma, cHat = mr.readInstance('C:/Users/User/Documents/Masterarbeit/data/reblock166_g=40_d=45-55_r=0.txt')
 dHat=cHat
-m4 = gp.read('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/tbfp-network.mps')
+m4 = gp.read('C:/Users/User/Documents/Masterarbeit/reblock166.mps')
 
 m6=m4.copy()
 m5=m4.copy()

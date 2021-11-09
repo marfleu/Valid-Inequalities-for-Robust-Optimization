@@ -1,21 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Oct 27 09:07:11 2021
-
-@author: mariu
+Script to test the consistency of the Clique Partitions and Covers computed by mr.buildConflictGraph
 """
 
 import gurobipy as gp
-from gurobipy import GRB
 import modelreading as mr
-import time
-import os
-import fnmatch
-import re
-import json
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 import random as rand
 
 gamma, cHat = mr.readInstance('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/RobustnessComponents/air04_g=40_d=95-105_r=0.txt')

@@ -1,59 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Oct 26 08:46:36 2021
-
-@author: User
+First sketch of a separation approach based on general Cover Inequalities.
 """
 import modelreading as mr
 import gurobipy as gp
-from gurobipy import GRB
-import random as rand
-import mappedqueue as mapq
-import time
-from bidict import bidict
-import re
+
 
 def separateConflictGraph(g, z, weights, cutoff, cHat):
-    """
-    Builds a Conflict Graph on variables with weights above a certain 
-    cutoff value. By default also creates the adjacency matrix of this 
-    graph.
-    Method in particular ignores inequalities with the variable z.
 
-    Parameters
-    ----------
-    g : Gurobipy combinatorial (possibly robust formulation) ILP 
-    z : name of the z variable in the robust model (if existant)
-    weights : dictionnary from combinatorial variables of g --> weight 
-    cutoff : value which defines the cutoff for the variable weights
-    adjacency : TYPE, optional
-        DESCRIPTION. The default is True.
-
-    Returns
-    -------
-    list of
-        several important datastructures for a Conflict Graph:
-            C --> list, with entries for every inequality from g;
-                  every entry is again a list of cliques in the 
-                  Conflict Graph extracted from the inequality, either 
-                  as a tuple (i, i), coressponding to a clique of
-                  variables x_i, x_{i+1}, ..., x_n, variables being 
-                  numbered in increasing order defined by their coefficients
-                  in the inequality, or a tuple (j, i) with j < i, corresponding
-                  to a clique of x_j, x_i, x_{i+1}, ..., x_n;
-            l --> list, with entries for every inequality from g;
-                  every entry is a tuple of three;
-                  tuple entry 0 --> variable name
-                  tuple entry 1 --> coefficient of this variable in adjusted inequality
-                  tuple entry 2 --> 0: if variable appears negated in adjusted ineq.
-                                    1: if variable appears unnegated in adjusted ineq.
-            vartoclique --> dictionary: variable --> list of tuples with two entries each
-                                                     first of which points to an inequality n
-                                                     second pointing to the index in the ordering
-                                                     by coefficients of the variable in this ineq.
-                  
-
-    """
     constrs=g.getConstrs()
     n=0
     l=[]
@@ -176,28 +130,11 @@ def separateConflictGraph(g, z, weights, cutoff, cHat):
 
 
 def ExtendedRobustFormulation(g, z, pvalues, cHat, weights):
-    """
-    Extends a given Robust Formulation by Clique Inequalities with Cliques 
-    from a weighted Conflict Graph, possibly with weights given by objective values of a 
-    previous solution of  g.
-    Parameters
-    ----------
-    g : Gurobi model of a Robust Formulation
-    z : Gurobi variable 'z' from Robust Formulation
-    pvalues : dictionnary of Gurobi variables of all 'p'-variables from Robust Formulation
-    cHat : dictionary of worst case deviations for Robust Formulation (Gurobi.var.name --> value)
-    weights : dictionary of weights to compute a weighted Conflict Graph (Gurobi.var.name --> value) 
-
-    Extends a given Robust Formulation g by Clique Inequalities with Cliques 
-    from a weighted Conflict Graph, possibly with weights given by objective values of a 
-    previous solution of  g.
-
-    """
     G=mr.ConflictGraph()
     [G.Cliques,G.Equations,G.vartovar,G.vartoclique,G.numbering]=separateConflictGraph(g, z, weights, 0.01, cHat)
     #G.FindCliquePartitionDSatur()
-    #G.FindCliqueCover()
-    #Cliques=G.Cliques
+    G.FindCliqueCover()
+    Cliques=G.Cliques
     for cli in Cliques:
         #print("hier cli ", cli)
         expr1=sum(g.getVarByName(pvalues[v].VarName) for v in cli) +g.getVarByName(z)
@@ -211,23 +148,6 @@ def ExtendedRobustFormulation(g, z, pvalues, cHat, weights):
     g.update()
 
 def extendMultipleTimes(g, gamma, n, z='z', pvalues={}, cHat={}):
-    """
-    
-    
-    Parameters
-    ----------
-    g : gurobipy instance of non-robust model, non-relaxed, non-optimized
-    gamma: 'gamma'-value from Robust Formulation 
-    z : Gurobi variable 'z' from Robust Formulation
-    pvalues : dictionary of Gurobi variables of all 'p'-variables from Robust Formulation
-    cHat: dictionary of worst case deviations for Robust Formulation (Gurobi.var.name --> value) 
-    n : number of extensions to be applied to the model
-    
-    Returns
-    -------
-    None.
-    
-    """
     ps=set()
     if pvalues:
         for t in pvalues:
