@@ -8,7 +8,7 @@ Created on Tue Jul 13 19:52:59 2021
 import gurobipy as gp
 from gurobipy import GRB
 import random as rand
-import modelreading as mr
+from modelreading import robustformulation as mr
 
 try:
 

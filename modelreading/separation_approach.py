@@ -2,7 +2,7 @@
 """
 First sketch of a separation approach based on general Cover Inequalities.
 """
-import modelreading as mr
+from modelreading import modelreading as mr
 import gurobipy as gp
 
 

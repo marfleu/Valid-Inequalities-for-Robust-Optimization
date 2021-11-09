@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat Nov  6 09:14:14 2021
+Created on Tue Nov  9 10:07:22 2021
 
 @author: User
 """
 
+
 import gurobipy as gp
 from gurobipy import GRB
-import modelreading as mr
+from modelreading import robustformulation as mr
 
 #Create a new model
 
@@ -19,15 +20,17 @@ x3 = m.addVar(vtype=GRB.BINARY, name="x3")
 x4 = m.addVar(vtype=GRB.BINARY, name="x4")
 x5 = m.addVar(vtype=GRB.BINARY, name="x5")
 x6 = m.addVar(vtype=GRB.BINARY, name="x6")
-x8 = m.addVar(vtype=GRB.BINARY, name="x8")
+x7 = m.addVar(vtype=GRB.BINARY, name="x7")
 # Set objective
 m.setObjective(-x1 - x2 - 2 * x3 + -x4 , GRB.MINIMIZE)
 
 # # Add constraint: 
 m.addConstr(x1 + x2 + x5 <= 1, "c0")
 m.addConstr(x1 +2*x2 + 2*x3 + 2*x4 + x5 <= 2, "c1")
-m.addConstr(x1 +2*x2 + 2*x3 -x8 <= 1, "c2")
-m.addConstr(2*x6 + x5 <= 1, "c3")
+m.addConstr(x1 +x2 + x3 +2*x7 <= 2, "c2")
+m.addConstr(x7+ x6 <= 1, "c3")
+m.addConstr(x1+ x6 <= 1, "c3")
+
 
 
 

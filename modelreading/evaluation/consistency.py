@@ -4,10 +4,10 @@ Script to test the consistency of the Clique Partitions and Covers computed by m
 """
 
 import gurobipy as gp
-import modelreading as mr
+from modelreading import robustformulation as mr
 import random as rand
 
-gamma, cHat = mr.readInstance('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/RobustnessComponents/air04_g=40_d=95-105_r=0.txt')
+gamma, cHat = mr.readInstance('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/RobustnessComponents/mod010_g=40_d=95-105_r=0.txt')
 dHat=cHat
 m5 = gp.read('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/mod010.mps')
 G=mr.ConflictGraph()

@@ -8,7 +8,7 @@ This is a usage template of how to use the python methods from modelreading.
 Deviating from this routine is strongly disencouraged!
 """
 import gurobipy as gp
-import modelreading as mr
+from modelreading import modelreading as mr
 
 ####### reading the instance values from files ##########
 file2='C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/RobustnessComponents/mod010_g=40_d=95-105_r=0.txt'

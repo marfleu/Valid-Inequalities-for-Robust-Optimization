@@ -6,7 +6,7 @@ the robust objective value mainly. All methods can be used automatically on a nu
 the directories where the evaluation files all located and applies CompareRobustMethods on them.   
 """
 import gurobipy as gp
-import modelreading as mr
+from modelreading import robustformulation as mr
 import time
 import os
 import fnmatch

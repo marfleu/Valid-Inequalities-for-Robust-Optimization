@@ -8,7 +8,7 @@ Script to compare the model solving times and objective values of addKnapsack to
 """
 
 import gurobipy as gp
-import modelreading as mr
+from modelreading import robustformulation as mr
 import time
 
 
