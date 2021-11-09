@@ -9,15 +9,15 @@ import time
 import pandas as pd
 
 
-gamma, cHat = mr.readInstance('C:/Users/User/Documents/Masterarbeit/data/air03_g=40_d=45-55_r=0.txt')
+gamma, cHat = mr.readInstance('C:/Users/User/Documents/Masterarbeit/data/10teams_g=40_d=45-55_r=0.txt')
 dHat=cHat
-m4 = gp.read('C:/Users/User/Documents/Masterarbeit/air03.mps')
+m4 = gp.read('C:/Users/User/Documents/Masterarbeit/10teams.mps')
   
 m5=m4.copy()
 cHat, pvalues, z =mr.RobustFormulation(m4, gamma, False, "none", cHat)
 
 t1=time.time()
-cHat, pvalues, z =mr.RobustFormulation(m5, gamma, True, "default", cHat)
+cHat, pvalues, z =mr.RobustFormulation(m5, gamma, False, "default", cHat)
 t1=time.time()-t1
 
 g4=m4.relax()
