@@ -41,12 +41,14 @@ for file2 in os.listdir('C:/Users/User/Documents/Masterarbeit/data'):
         lb=pattern.group(1)
         print(pattern.group(1))
         primal=False
+        y=float('inf')
         for line in csvres.index:
             if not fnmatch.fnmatch(file2, csvres['Instance'][line] + '*'):
                 continue
             if fnmatch.fnmatch(file2, csvres['Instance'][line] + '*') and float(gam)==float(csvres['Gamma Percentage Used Variables'][line]) and float(lb)==float(csvres['Lower Percentage Deviation'][line]):
                 try:
-                    y=float(csvres['Primal Bound'][line])
+                    if float(csvres['Primal Bound'][line]) < y:
+                        y=float(csvres['Primal Bound'][line])
                     if csvres['Optimal'][line]==True:
                         primal=True
                         y0=float(csvres['Primal Bound'][line])
