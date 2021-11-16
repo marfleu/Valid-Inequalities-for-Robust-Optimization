@@ -45,7 +45,7 @@ for file2 in os.listdir('C:/Users/User/Documents/Masterarbeit/data'):
         for line in csvres.index:
             if not fnmatch.fnmatch(file2, csvres['Instance'][line] + '*'):
                 continue
-            if fnmatch.fnmatch(file2, csvres['Instance'][line] + '*') and float(gam)==float(csvres['Gamma Percentage Used Variables'][line]) and float(lb)==float(csvres['Lower Percentage Deviation'][line]):
+            if fnmatch.fnmatch(file2, csvres['Instance'][line] + '*') and float(gam)==float(csvres['Gamma Percentage Used Variables'][line]) and float(lb)==float(csvres['Lower Percentage Deviation'][line]) and not (csvres['Algorithm'][line]=='RECYCLE_VALID_INEQUALITIES'):
                 try:
                     if float(csvres['Primal Bound'][line]) < y:
                         y=float(csvres['Primal Bound'][line])
@@ -66,20 +66,20 @@ for file2 in os.listdir('C:/Users/User/Documents/Masterarbeit/data'):
             #at the moment it is for analyzing the pure model solving times.
             #add the following command instead, if wanting to analyze complete computation times
             #t1=data["original"]["Building Time"] + data["original"]["Computation Time"]
-            t1= data["original"]["Computation Time"]
+            t1= data["original"]["Computation Time"] #+ data["original"]["Building Time"]
 
             y1=data["original"]["Objective value"]
-            t2=data["defaultwithcliques"]["Computation Time"]
+            t2=data["defaultwithcliques"]["Computation Time"] + data["defaultwithcliques"]["Building Time"]
             y2=data["defaultwithcliques"]["Objective value"]
-            t3= data["default"]["Computation Time"]
+            t3= data["default"]["Computation Time"] + data["default"]["Building Time"]
             y3=data["default"]["Objective value"]
-            t4= data["ext1"]["Computation Time"]
+            t4= data["ext1"]["Computation Time"] + data["ext1"]["Building Time"]
             y4=data["ext1"]["Objective value"]
-            t5= data["cover"]["Computation Time"]
+            t5= data["cover"]["Computation Time"] + data["cover"]["Building Time"]
             y5=data["cover"]["Objective value"]  
-            t7= data["partitioncover"]["Computation Time"]
+            t7= data["partitioncover"]["Computation Time"] +data["partitioncover"]["Building Time"]
             y7=data["partitioncover"]["Objective value"]  
-            t8= data["savecover"]["Computation Time"]
+            t8= data["savecover"]["Computation Time"] + data["savecover"]["Building Time"]
             y8=data["savecover"]["Objective value"]  
             tmax=max(t1, t2, t3, t4, t5, t7, t8)
             tmin=min(t1, t2, t3, t4, t5, t7, t8)
@@ -90,11 +90,11 @@ for file2 in os.listdir('C:/Users/User/Documents/Masterarbeit/data'):
             plt.plot([t5], [y5], color='deeppink', marker='x', label='cover')
             plt.plot([t7], [y7], color='lightgreen', marker='x', label='cover partition')
             plt.plot([t8], [y8], color='darkgreen', marker='x', label='cover strength')
-            plt.text(t1, y1, 'original')
-            plt.text(t2, y2, 'defwithcli')
-            plt.text(t3, y3, 'def')
-            plt.text(t4, y4, 'ext1')
-            plt.text(t5, y5, 'cover')
+            # plt.text(t1, y1, 'original')
+            # plt.text(t2, y2, 'defwithcli')
+            # plt.text(t3, y3, 'def')
+            # plt.text(t4, y4, 'ext1')
+            # plt.text(t5, y5, 'cover')
             plt.text(tmax/2, y0, 'primal bound')
             plt.hlines(y1, 0, tmax, colors='b')
             plt.hlines(y0, 0, tmax, colors='g')
@@ -106,7 +106,7 @@ for file2 in os.listdir('C:/Users/User/Documents/Masterarbeit/data'):
             a=len(df2)-1
             df2=df2.rename(index={a: pattern.group(0)})
             #uncomment if wanting to really plot all the values
-            #plt.savefig('C:/Users/User/Documents/Masterarbeit/Grafiken/'+pattern.group(0))
+            plt.savefig('C:/Users/User/Documents/Masterarbeit/Grafiken/'+pattern.group(0))
             plt.close()
             f.close()
         except:
@@ -116,14 +116,15 @@ for file2 in os.listdir('C:/Users/User/Documents/Masterarbeit/data'):
 
 df3=pd.DataFrame(data=df2.loc[:,['originaltime', 'defaultcliquetime', 'defaulttime', 'ext1time', 'covertime', 'coverexttime','coverparttime']])
 df3.rename(columns={'originaltime':'original', 'defaultcliquetime':'defaultclique', 'defaulttime':'default', 'ext1time':'ext1', 'covertime':'cover', 'coverexttime':'coverext','coverparttime':'coverpart'}, inplace=True)
-df3=df3.apply(lambda x: x/x['original'], axis=1)
+df3=df3.apply(lambda x: x/x['original'] if x['original']!=0 else None, axis=1)
 timestat=df3.describe()
 timestat=np.round(timestat, 5)
 timestat.to_latex('C:/Users/User/Documents/Masterarbeit/Tables/modeltimestats.tex')
+df3=df3.dropna()
 ax=sns.stripplot(data=df3.loc[:,['defaultclique', 'default', 'ext1', 'cover', 'coverext','coverpart']], alpha=0.85, size=1.5)
 ax.set_ylim([0,20])
 plt.ylabel('relative computation time')
-plt.savefig('C:/Users/User/Documents/Masterarbeit/Grafiken/' + 'scattertimes')
+#plt.savefig('C:/Users/User/Documents/Masterarbeit/Grafiken/' + 'scattertimes')
 plt.close()
 
 # for m in [10, 40, 70, 100]:
@@ -169,7 +170,10 @@ for m in [10, 40, 70, 100]:
     df4=pd.DataFrame(data=df2.loc[df2['gamma']==str(m), ['bound','originalvalue', 'defaultcliquevalue', 'defaultvalue', 'ext1value', 'covervalue', 'coverextvalue','coverpartvalue']])
     df4=df4.apply(lambda x: 1-x/x['bound'] if (x['bound']>0 and x['originalvalue']*x['bound']>0) else (1-x['bound']/x if (x['bound']<=0 and x['originalvalue']*x['bound']>0) else None) , axis=1)
     df4=df4.apply(lambda x: (x['originalvalue']-x)/x['originalvalue'] if x['originalvalue']!=0 else 0, axis=1)
+    df4.replace([np.inf, -np.inf], np.nan, inplace=True)
     df4.rename(columns={'originalvalue':'original', 'defaultcliquevalue':'defaultclique', 'defaultvalue':'default', 'ext1value':'ext1', 'covervalue':'cover', 'coverextvalue':'coverext','coverpartvalue':'coverpart'}, inplace=True)
+    df4.to_csv('C:/Users/User/Documents/Masterarbeit/Tables/integrality_gaps_difference_'+str(m)+'.csv')
+    df4=df4.dropna()
     ax = sns.violinplot(data=df4.loc[:,['defaultclique', 'default', 'ext1', 'cover', 'coverext','coverpart']], palette="Set2", scale="count", inner="quartile", color='red', order=['defaultclique', 'default','coverpart', 'cover','coverext', 'ext1'])
     y_ticks = np.arange(0, 1, 0.1)
     plt.ylabel('integrality gap closed')
@@ -178,7 +182,6 @@ for m in [10, 40, 70, 100]:
     plt.setp(ax.get_xticklabels(), rotation=30, horizontalalignment='right', fontsize='x-small')
     plt.savefig('C:/Users/User/Documents/Masterarbeit/Grafiken/' + 'integrality_gaps_closed_' + str(m))
     plt.close()
-    df4.to_csv('C:/Users/User/Documents/Masterarbeit/Tables/integrality_gaps_difference_'+str(m)+'.csv')
     stas=df4.describe()
     stas=np.round(stas, 5)
     stas.to_latex('C:/Users/User/Documents/Masterarbeit/Tables/integrality_gaps_closed_'+str(m)+'.tex');
@@ -187,7 +190,9 @@ for m in [10, 40, 70, 100]:
     df4=pd.DataFrame(data=df2.loc[df2['gamma']==str(m), ['bound','originalvalue', 'defaultcliquevalue', 'defaultvalue', 'ext1value', 'covervalue', 'coverextvalue','coverpartvalue']])
     df4=df4.apply(lambda x: 1-x/x['bound'] if (x['bound']>0 and x['originalvalue']*x['bound']>0) else (1-x['bound']/x if (x['bound']<=0 and x['originalvalue']*x['bound']>0) else None) , axis=1)
     df4.rename(columns={'originalvalue':'original', 'defaultcliquevalue':'defaultclique', 'defaultvalue':'default', 'ext1value':'ext1', 'covervalue':'cover', 'coverextvalue':'coverext','coverpartvalue':'coverpart'}, inplace=True)
-
+    df4.replace([np.inf, -np.inf], np.nan, inplace=True)
+    df4.to_csv('C:/Users/User/Documents/Masterarbeit/Tables/integrality_gaps_'+str(m)+'.csv')
+    df4=df4.dropna()
     ax = sns.violinplot(data=df4.loc[:,['original', 'defaultclique', 'default', 'ext1', 'cover', 'coverext','coverpart']], palette="Set2", scale="count", inner="quartile", color='red', order=['original','defaultclique', 'default','coverpart', 'cover','coverext', 'ext1'])
     y_ticks = np.arange(0, 1, 0.1)
     
@@ -197,7 +202,7 @@ for m in [10, 40, 70, 100]:
     plt.setp(ax.get_xticklabels(), rotation=30, horizontalalignment='right', fontsize='x-small')
     plt.savefig('C:/Users/User/Documents/Masterarbeit/Grafiken/' + 'boxplot' + str(m))
     plt.close()
-    df4.to_csv('C:/Users/User/Documents/Masterarbeit/Tables/integrality_gaps_'+str(m)+'.csv')
+
     stas=df4.describe()
     stas=np.round(stas, 5)
     stas.to_latex('C:/Users/User/Documents/Masterarbeit/Tables/int_gaps_stats_'+str(m)+'.tex');

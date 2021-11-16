@@ -6,7 +6,7 @@ the robust objective value mainly. All methods can be used automatically on a nu
 the directories where the evaluation files all located and applies CompareRobustMethods on them.   
 """
 import gurobipy as gp
-from modelreading import robustformulation as mr
+import robustformulation as mr
 import time
 import os
 import fnmatch
@@ -26,83 +26,37 @@ def CompareRobustMethods(file, file2):
     m5=m.copy()
     m6=m.copy()
     m7=m.copy()
-    # try:
-    #     pattern=re.search('\/[^\/]+[^\.]+', file2)
-    #     print(pattern)
-    #     pattern=pattern.group(0) + '_json.json'
-    #     print("\n\n\n\n", pattern, "\n\n\n\n")
-    #     data={}
-    #     with open(pattern, 'r') as outfile:
-    #         data=json.load(outfile)
-    # #     t4=time.time()
-    # #     val2=mr.extendMultipleTimes(m2, gamma, 1, 'z',{}, cHat)
-    # #     #p2=len(pvalues)
-    # #     t4=time.time()-t4
-    # #     #g2=m2.relax()
-    # #     t5=time.time()
-    # #     val3=mr.extendMultipleTimes(m5, gamma, 3, 'z',{}, cHat)
-    # #     t5=time.time() -t5
-    # #     data['ext1']={}
-    # #     data['ext1']['Objective value']=val2
-    # #     data['ext1']['Building Time']=t4
-    # #     data['ext1']['Computation Time']=0
-    # #     data['ext1']['p-Values']=data['original']['p-Values']
-    # #     data['ext1']['nonzeroes']=0
-    # #     data['ext3']={}
-    # #     data['ext3']['Objective value']=val3
-    # #     data['ext3']['Building Time']=t5
-    # #     data['ext3']['Computation Time']=0
-    # #     data['ext3']['p-Values']=data['original']['p-Values']
-    # #     data['ext3']['nonzeroes']=0
-        
-    #     t8=time.time()
-    #     cHat, pvalues, z = mr.RobustFormulation(m4, gamma, False, "cover", cHat)
-    #     p4=len(pvalues)
-    #     t8=time.time() -t8
-    #     g4=m4.relax()
-    #     t9=time.time()
-    #     g4.optimize()
-    #     t9=time.time()-t9
-    #     t10=time.time()
-    #     cHat, pvalues, z = mr.RobustFormulation(m6, gamma, False, "coverpartition", cHat)
-    #     p4=len(pvalues)
-    #     t10=time.time() -t10
-    #     g6=m6.relax()
-    #     t11=time.time()
-    #     g6.optimize()
-    #     t11=time.time()-t11
-    #     t12=time.time()
-    #     mr.ExtendCover(m7, gamma, cHat)
-    #     t12=time.time() -t12
-    #     g7=m7.relax()
-    #     t13=time.time()
-    #     g7.optimize()
-    #     t13=time.time()-t13
-    #     l4=[g4.getVarByName(v).x for v in originvars if abs(g4.getVarByName(v).x)>0.001]
-    #     data['cover']={}
-    #     data['cover']['Objective value']=g4.ObjVal
-    #     data['cover']['Building Time']=t8
-    #     data['cover']['Computation Time']=t9
-    #     data['cover']['p-Values']=p4
-    #     data['cover']['nonzeroes']=len(l4)
-    #     data['partitioncover']={}
-    #     data['partitioncover']['Objective value']=g6.ObjVal
-    #     data['partitioncover']['Building Time']=t10
-    #     data['partitioncover']['Computation Time']=t11
-    #     data['partitioncover']['p-Values']=p4
-    #     data['partitioncover']['nonzeroes']=len(l4)
-    #     data['savecover']={}
-    #     data['savecover']['Objective value']=g7.ObjVal
-    #     data['savecover']['Building Time']=t12
-    #     data['savecover']['Computation Time']=t13
-    #     data['savecover']['p-Values']=p4
-    #     data['savecover']['nonzeroes']=None   
-    
-    #     with open(pattern, 'w') as outfile:
-    #         json.dump(data, outfile)
-    # except:
-    #     return
+    try:
+        pattern=re.search('\/[^\/]+[^\.]+', file2)
+        print(pattern)
+        pattern=pattern.group(0) + '_json.json'
+        print("\n\n\n\n", pattern, "\n\n\n\n")
+        data={}
+        with open(pattern, 'r') as outfile:
+            data=json.load(outfile)
 
+        
+
+        t12=time.time()
+        mr.ExtendCover(m7, gamma, cHat)
+        t12=time.time() -t12
+        g7=m7.relax()
+        t13=time.time()
+        g7.optimize()
+        t13=time.time()-t13
+
+        data['savecover']={}
+        data['savecover']['Objective value']=g7.ObjVal
+        data['savecover']['Building Time']=t12
+        data['savecover']['Computation Time']=t13
+        data['savecover']['p-Values']=None
+        data['savecover']['nonzeroes']=None   
+    
+        with open(pattern, 'w') as outfile:
+            json.dump(data, outfile)
+    except:
+        return
+    return
     t0=time.time()
     cHat, pvalues, z = mr.RobustFormulation(m, gamma, True, "none", cHat)
     p=len(pvalues)
@@ -298,7 +252,7 @@ j=0
 for file in os.listdir('C:/Users/User/Documents/Masterarbeit'):
     pattern=re.search('[^\.]+', file)
     i+=1
-    if not (i==1):
+    if not (i>70 and i<=80):
         #this condition is to control which files should be read
         continue
     for file2 in os.listdir('C:/Users/User/Documents/Masterarbeit/data'):
@@ -315,7 +269,7 @@ for file in os.listdir('C:/Users/User/Documents/Masterarbeit'):
             except:
                 continue
 
-df.to_csv('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Tables/fine.csv')        
+#df.to_csv('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Tables/fine.csv')        
  
 #CompareRobustMethods('C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/co-100.mps', 'C:/Users/mariu/OneDrive/Dokumente/Masterarbeit/Testinstanzen/RobustnessComponents/co-100_g=100_d=45-55_r=0.txt')           
  #m = gp.read('C:/Users/mariu/OneDrive/Dokumente/Python Scripts/30_70_45_05_100.mps')

@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 """
 Created on Sat Sep  4 09:22:26 2021
@@ -40,26 +41,8 @@ x22 = m.addVar(vtype=GRB.BINARY, name="x22")
 m.setObjective(-x1 - x2 - 2 * x3 + -x4 -3* x5 - 2 * x6 - x13 + x15 -x16, GRB.MINIMIZE)
 
 # # Add constraint: 
-m.addConstr(x10 + 2*x11 + 2*x12+ x1 <= 2, "c4")
-m.addConstr(x4 + x5 + x6 <= 1, "c1")
-m.addConstr(x1 + x2 + x3 <= 1, "c0")
 
-m.addConstr(x1 + 2*x5 + 3*x6 <= 3, "c13")
-m.addConstr(x1 + x2 + x4 <= 1, "c14")
-m.addConstr(x2 + x3 + x5 <= 1, "c15")
-m.addConstr(x2 + x3 + x6 <= 1, "c16")
-m.addConstr(x4 + 2*x3 <= 2, "c17")
-m.addConstr(x6 + x7 + x8 <= 1, "c2")
-m.addConstr(x9 + x7 + x8 <= 1, "c3")
-
-m.addConstr(x13 + x2 + x3 - x15 <= 1, "c5")
-m.addConstr( x2 + x5 <= 1, "c6")
-m.addConstr( x4 + x3 +x5 <= 1, "c7")
-m.addConstr( x4 + x3 >= 1, "c8")
-m.addConstr( x17 + x18 + x19 == 2, "c9")
-m.addConstr( x17 + x18 - x20 - 2*x21 <= 1, "c10")
-m.addConstr( 2*x17 + x18 + x19 + 3*x20+ 4*x21 + 3*x16 + 5*x9 <= 6, "c11")
-m.addConstr( x4 - x18 - x19 <= 2, "c12")
+m.addConstr( x1+ x2 + 2*x3 +4*x4+ 2*x17 +3*x7 + x18 + x19 + 3*x20+ 4*x21 + 3*x16 + 5*x9 +5*x6 <= 6, "c11")
 
 
 

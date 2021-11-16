@@ -7,7 +7,7 @@ in the python script 'usagetemplate.py'.
 import gurobipy as gp
 from gurobipy import GRB
 import random as rand
-from modelreading import mappedqueue as mapq
+import mappedqueue as mapq
 import time
 from bidict import bidict
 import re
@@ -526,7 +526,6 @@ class ConflictGraph:
                         pass
                 except:
                     self.vartovar[w[0]]=[]
-                t=time.time()
                 for tup in self.vartoclique[w[0]]:
                     k=tup[1]
                     n=tup[0]    
@@ -675,7 +674,6 @@ class ConflictGraph:
                         pass
                 except:
                     self.vartovar[w[0]]=[var]
-                t=time.time()
                 for tup in self.vartoclique[w[0]]:
                     k=tup[1]
                     n=tup[0]    
@@ -759,7 +757,6 @@ class ConflictGraph:
             except:
                 self.Cliques.append([var])
         for var in self.vartoclique:
-            t=time.time()
             try:
                 a=self.vartobestclique[var]
                 #maximal clique of var has already been found
@@ -784,9 +781,11 @@ class ConflictGraph:
                                 clique=[]
                                 for i in range(cliqueindex, length):
                                     if l[n][i][2]==1:
+                                        #l[n][i][2]==1 means variable is unnegated
                                         try: 
                                             #if the best clique has already been found
                                             #the variable will not be added to the clique
+                                            #except for var itself
                                             a=self.vartobestclique[l[n][i][0]]
                                             if l[n][i][0] == var:
                                                 clique.append(l[n][i][0])  
@@ -1287,7 +1286,6 @@ def ExtendCover(g, gamma, cHat):
     """
     cHat, pvalues, z = RobustFormulation(g, gamma, False, "cover", cHat)
     m=g.relax()
-    m.optimize()
     for var in pvalues:
         expr1=g.getVarByName(pvalues[var].VarName) +g.getVarByName(z.VarName)
         expr2=0

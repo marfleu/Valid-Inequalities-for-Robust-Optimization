@@ -8,14 +8,14 @@ Script to compare the model solving times and objective values of addKnapsack to
 """
 
 import gurobipy as gp
-from modelreading import robustformulation as mr
+import robustformulation as mr
 import time
 
 
 
-gamma, cHat = mr.readInstance('C:/Users/User/Documents/Masterarbeit/data/reblock166_g=40_d=45-55_r=0.txt')
+gamma, cHat = mr.readInstance('C:/Users/User/Documents/Masterarbeit/data/cap6000_g=40_d=45-55_r=0.txt')
 dHat=cHat
-m4 = gp.read('C:/Users/User/Documents/Masterarbeit/reblock166.mps')
+m4 = gp.read('C:/Users/User/Documents/Masterarbeit/cap6000.mps')
 
 m6=m4.copy()
 m5=m4.copy()
